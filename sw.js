@@ -1,5 +1,5 @@
 /* Pastillero — service worker: funciona sin conexión y maneja los toques en los avisos */
-const CACHE = 'pastillero-v6';
+const CACHE = 'pastillero-v7';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png', './icon-maskable-512.png', './recordatorio.mp3'];
 
 self.addEventListener('install', e => {
