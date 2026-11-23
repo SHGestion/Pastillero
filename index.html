@@ -75,6 +75,7 @@ h2{font-size:15px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute
 .hero .k{font-size:13px;text-transform:uppercase;letter-spacing:.08em;opacity:.85;font-weight:600}
 .hero .m{font-size:24px;font-weight:700;margin-top:4px;line-height:1.2}
 .hero .d{opacity:.9;margin-top:2px}
+.hero .hm{font-size:21px;font-weight:700;margin-top:10px;line-height:1.2}
 .hero .w{font-size:15px;margin-top:10px;font-weight:600;opacity:.95}
 .hero.done{background:var(--ok-soft);color:var(--ok)}
 
@@ -102,6 +103,8 @@ h2{font-size:15px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute
 .tag.pend{background:transparent;color:var(--muted);border:1px solid var(--line)}
 .take{border:0;background:var(--pri);color:var(--pri-ink);font-weight:700;border-radius:12px;min-width:84px;min-height:44px;padding:0 14px;cursor:pointer}
 .take.soft{background:var(--pri-soft);color:var(--pri)}
+.take:disabled{background:var(--line);color:var(--muted);cursor:default;font-weight:600}
+.tag.done{font-size:15px;padding:5px 10px;background:var(--ok-soft);color:var(--ok);font-weight:700}
 
 /* Med cards */
 .med{padding:16px;margin-bottom:12px}
@@ -271,6 +274,9 @@ const UNITS = {
   'inhalación': 'inhalaciones', 'aplicación': 'aplicaciones', 'ampolla': 'ampollas', 'parche': 'parches',
   'unidad': 'unidades', 'UI': 'UI'
 };
+const VERBS = { inhalación: ['Inhalar', 'Inhalado'], aplicación: ['Aplicar', 'Aplicado'], parche: ['Aplicar', 'Aplicado'], ampolla: ['Aplicar', 'Aplicado'], UI: ['Aplicar', 'Aplicado'] };
+const verb = m => { const v = VERBS[m && m.unit] || ['Tomar', 'Tomado']; return { act: v[0], done: v[1] }; };
+const EARLY_MIN = 30; // minutos antes de la hora en que se habilita el botón
 const qty = (n, unit) => `${num(n)} ${Number(n) === 1 ? unit : (UNITS[unit] || unit)}`;
 
 // ---------- estado ----------
@@ -449,9 +455,10 @@ function confirmBox(title, msg, okLabel = 'Aceptar', danger = false) {
 // ---------- Vista: HOY ----------
 function doseState(d, now) {
   const l = logMap().get(d.key);
-  if (l) return l.status === 'taken' ? { cls: 'taken', tag: `<span class="tag ok">✓ ${hm(new Date(l.takenAt))}</span>` } : { cls: 'skipped', tag: '<span class="tag skip">Omitida</span>' };
+  if (l) return l.status === 'taken' ? { cls: 'taken', tag: `<span class="tag done">✓ ${verb(d.med).done} a las ${hm(new Date(l.takenAt))}</span>` } : { cls: 'skipped', tag: '<span class="tag skip">Omitida</span>' };
   const diff = now - d.time.getTime();
-  if (diff < 0) return { cls: 'pend', tag: '', btn: diff > -3600000 ? 'soft' : 'soft' };
+  if (diff < -EARLY_MIN * 60000) return { cls: 'pend', tag: '', btn: 'locked' };
+  if (diff < 0) return { cls: 'pend', tag: '', btn: 'soft' };
   if (diff <= 30 * 60000) return { cls: 'now', tag: '<span class="tag now">Ahora</span>', btn: 'pri' };
   return { cls: 'late', tag: '<span class="tag late">Atrasada</span>', btn: 'pri' };
 }
@@ -505,9 +512,13 @@ function renderHoy() {
     const pendingToday = doses.filter(d => !logMap().has(d.key));
     const late = pendingToday.filter(d => now - d.time.getTime() > 30 * 60000).length;
     if (nd) {
-      h += `<div class="hero"><div class="k">${nd.time.getTime() <= now ? 'Toca ahora' : 'Próxima toma'} · ${esc(nd.t)}</div>
-        <div class="m">${esc(nd.med.name)}${nd.med.dose ? ' <span style="font-weight:500;opacity:.85">' + esc(nd.med.dose) + '</span>' : ''}</div>
-        <div class="d">${esc(qty(nd.med.perDose, nd.med.unit))}${nd.med.notes ? ' · ' + esc(nd.med.notes) : ''}</div>
+      // todas las tomas pendientes a esa misma hora
+      const lm = logMap(), grp = myMeds().flatMap(m => dosesForDay(m, startOfDay(nd.time)))
+        .filter(d => +d.time === +nd.time && !lm.has(d.key)).sort((a, b) => a.med.name.localeCompare(b.med.name));
+      const big = grp.length === 1;
+      h += `<div class="hero"><div class="k">${nd.time.getTime() <= now ? 'Toca ahora' : 'Próxima toma'} · ${esc(nd.t)}${grp.length > 1 ? ` · ${grp.length} medicamentos` : ''}</div>
+        ${grp.map(d => `<div class="${big ? 'm' : 'hm'}">${esc(d.med.name)}${d.med.dose ? ' <span style="font-weight:500;opacity:.85">' + esc(d.med.dose) + '</span>' : ''}</div>
+        <div class="d">${esc(qty(d.med.perDose, d.med.unit))}${d.med.notes ? ' · ' + esc(d.med.notes) : ''}</div>`).join('')}
         <div class="w">${esc(untilText(nd.time))}${late ? ` · ${late} atrasada${late > 1 ? 's' : ''}` : ''}</div></div>`;
     } else if (doses.length) {
       h += `<div class="hero done"><div class="m">✓ Todo al día</div><div class="d">No quedan tomas pendientes.</div></div>`;
@@ -524,7 +535,7 @@ function renderHoy() {
         <div class="time">${esc(d.t)}</div><span class="dot" style="background:${esc(m.color)}"></span>
         <div class="grow"><div class="nm">${esc(m.name)}${m.dose ? ' · ' + esc(m.dose) : ''}</div>
         <div class="sub">${esc(qty(m.perDose, m.unit))}${m.notes ? ' · ' + esc(m.notes) : ''}</div>${st.tag ? `<div style="margin-top:4px">${st.tag}</div>` : ''}</div>
-        ${!logged ? `<button class="take ${st.btn === 'pri' ? '' : 'soft'}" data-take="${esc(d.key)}">Tomar</button>` : ''}
+        ${!logged ? (st.btn === 'locked' ? `<button class="take" disabled aria-label="Aún no es la hora">${verb(m).act}</button>` : `<button class="take ${st.btn === 'pri' ? '' : 'soft'}" data-take="${esc(d.key)}">${verb(m).act}</button>`) : ''}
       </div>`;
     }
     h += `</div>`;
@@ -560,11 +571,12 @@ function doseSheet(key) {
     <div class="muted">${esc(qty(m.perDose, m.unit))} · programada ${esc(fmtDayShort(parseYmd(ds)))} a las ${esc(t)}</div></div></div>
     ${m.notes ? `<div class="alert info" style="margin:0 0 14px">${esc(m.notes)}</div>` : ''}`;
   if (l) {
-    body += `<p>${l.status === 'taken' ? `Registrada como <b>tomada</b> el ${esc(fmtDayShort(new Date(l.takenAt)))} a las <b>${esc(hm(new Date(l.takenAt)))}</b>.` : 'Registrada como <b>omitida</b>.'}</p>
+    body += `<p>${l.status === 'taken' ? `Registrada como <b>${verb(m).done.toLowerCase()}</b> el ${esc(fmtDayShort(new Date(l.takenAt)))} a las <b>${esc(hm(new Date(l.takenAt)))}</b>.` : 'Registrada como <b>omitida</b>.'}</p>
       <button class="btn bad block" id="dUndo">Deshacer registro</button>`;
   } else {
-    body += `<button class="btn pri block" id="dNow">Tomada ahora (${nowT})</button>
-      <div class="field" style="margin-top:16px"><label class="l">¿La tomaste a otra hora?</label>
+    const early = atTime(parseYmd(ds), t).getTime() - Date.now() > EARLY_MIN * 60000;
+    body += `${early ? `<div class="alert info" style="margin:0 0 4px"><div>Aún no es la hora. El botón <b>${verb(m).act}</b> se habilita ${EARLY_MIN} minutos antes de las ${esc(t)}.</div></div>` : `<button class="btn pri block" id="dNow">${verb(m).done} ahora (${nowT})</button>`}
+      <div class="field" style="margin-top:16px"><label class="l">${early ? '¿Ya lo hiciste antes de la hora? Registra cuándo:' : '¿Fue a otra hora?'}</label>
       <div class="row"><input type="date" class="in" id="dDate" value="${ds}"><input type="time" class="in" id="dTime" value="${t}"></div></div>
       <button class="btn block" id="dAt">Registrar a esa hora</button>
       <button class="btn ghost block" id="dSkip" style="margin-top:12px">Omitir esta dosis</button>`;
@@ -574,7 +586,8 @@ function doseSheet(key) {
     s.querySelector('#dNow') && (s.querySelector('#dNow').onclick = () => { takeDose(key, new Date()); closeSheet(); toast('Toma registrada ✓'); render(); });
     s.querySelector('#dAt') && (s.querySelector('#dAt').onclick = () => {
       const dd = s.querySelector('#dDate').value, tt = s.querySelector('#dTime').value; if (!dd || !tt) return;
-      takeDose(key, atTime(parseYmd(dd), tt)); closeSheet(); toast('Toma registrada ✓'); render();
+      const w = atTime(parseYmd(dd), tt); if (w.getTime() > Date.now() + 60000) return toast('No puedes registrar una hora futura');
+      takeDose(key, w); closeSheet(); toast('Toma registrada ✓'); render();
     });
     s.querySelector('#dSkip') && (s.querySelector('#dSkip').onclick = () => { skipDose(key); closeSheet(); toast('Dosis omitida'); render(); });
   });
@@ -782,7 +795,7 @@ function renderHist() {
     const tk = r.items.filter(i => i.status === 'taken').length, tot = r.items.filter(i => i.status !== 'extra').length;
     h += `<div class="hday"><div class="h"><span>${esc(dayLabel(r.day))}</span><span class="small muted" style="font-weight:600">${tk}/${tot}</span></div><div class="card">`;
     for (const i of r.items) {
-      const tag = i.status === 'taken' ? `<span class="tag ok">✓ ${hm(i.takenAt)}</span>` : i.status === 'skipped' ? '<span class="tag skip">Omitida</span>' : i.status === 'extra' ? `<span class="tag ok">Extra ${hm(i.takenAt)}</span>` : '<span class="tag late">Sin registro</span>';
+      const tag = i.status === 'taken' ? `<span class="tag done">✓ ${verb(i.med).done} ${hm(i.takenAt)}</span>` : i.status === 'skipped' ? '<span class="tag skip">Omitida</span>' : i.status === 'extra' ? `<span class="tag ok">Extra ${hm(i.takenAt)}</span>` : '<span class="tag late">Sin registro</span>';
       h += `<div class="hitem"><span style="width:48px;font-weight:700;font-variant-numeric:tabular-nums" class="${i.scheduled ? '' : 'muted'}">${i.scheduled || '—'}</span>
         <span class="dot" style="background:${esc(i.med.color)}"></span><div class="grow">${esc(i.med.name)}${i.med.dose ? ' <span class="muted">' + esc(i.med.dose) + '</span>' : ''}</div>${tag}</div>`;
     }
@@ -1012,7 +1025,7 @@ async function notify(title, body, tag, data) {
   const opts = { body, tag, data: data || {}, icon: 'icon-192.png', badge: 'icon-192.png', renotify: true, vibrate: [200, 100, 200], requireInteraction: !!(data && data.key) };
   try {
     const reg = 'serviceWorker' in navigator ? await navigator.serviceWorker.getRegistration() : null;
-    if (reg) { if (data && data.key) opts.actions = [{ action: 'take', title: '✓ Ya la tomé' }]; await reg.showNotification(title, opts); }
+    if (reg) { if (data && data.key) opts.actions = [{ action: 'take', title: '✓ Listo, registrar' }]; await reg.showNotification(title, opts); }
     else new Notification(title, opts);
   } catch (e) { try { new Notification(title, { body, tag }); } catch (_) { } }
 }
