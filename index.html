@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pastillero</title>
+<meta name="description" content="Recordatorio de medicamentos, registro de tomas y control de stock.">
+<meta name="theme-color" content="#0f766e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Pastillero">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<style>
+:root{
+  --bg:#f5f4f0; --card:#ffffff; --ink:#1c1f23; --muted:#667079; --line:#e4e2dc;
+  --pri:#0f766e; --pri-ink:#ffffff; --pri-soft:#e3f2ef;
+  --ok:#15803d; --ok-soft:#e6f4ea; --warn:#b45309; --warn-soft:#fdf1dc;
+  --bad:#b91c1c; --bad-soft:#fde8e8; --radius:16px;
+  --shadow:0 1px 2px rgba(0,0,0,.05),0 2px 8px rgba(0,0,0,.04);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#121416; --card:#1c1f22; --ink:#eef0f1; --muted:#9aa3ab; --line:#2c3135;
+    --pri:#2bb3a3; --pri-ink:#04201d; --pri-soft:#173430;
+    --ok:#4ade80; --ok-soft:#16301f; --warn:#fbbf24; --warn-soft:#33280f;
+    --bad:#f87171; --bad-soft:#3a1717; --shadow:none; color-scheme: dark;
+  }
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink)}
+body{font:17px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  padding-bottom:calc(84px + env(safe-area-inset-bottom));min-height:100vh}
+button,input,select,textarea{font:inherit;color:inherit}
+header.top{position:sticky;top:0;z-index:5;background:var(--bg);
+  padding:calc(10px + env(safe-area-inset-top)) 18px 10px;display:flex;align-items:center;gap:12px;
+  border-bottom:1px solid transparent}
+header.top.scrolled{border-bottom-color:var(--line)}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:20px;letter-spacing:-.01em}
+.brand svg{width:30px;height:30px}
+.chip-profile{margin-left:auto;border:1px solid var(--line);background:var(--card);border-radius:999px;
+  padding:6px 12px 6px 8px;display:flex;align-items:center;gap:8px;font-size:15px;cursor:pointer;max-width:50%}
+.chip-profile .av{width:24px;height:24px;border-radius:50%;background:var(--pri);color:var(--pri-ink);
+  display:grid;place-items:center;font-size:13px;font-weight:700;flex:none}
+.chip-profile span.n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+main{padding:6px 16px 24px;max-width:640px;margin:0 auto}
+h2{font-size:15px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:24px 4px 10px;font-weight:600}
+.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid var(--line)}
+.pad{padding:16px}
+.muted{color:var(--muted)}
+.small{font-size:14px}
+.row{display:flex;align-items:center;gap:12px}
+.grow{flex:1;min-width:0}
+.btn{border:0;border-radius:12px;padding:12px 16px;font-weight:600;cursor:pointer;background:var(--pri-soft);color:var(--pri);
+  min-height:46px;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.btn.pri{background:var(--pri);color:var(--pri-ink)}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--ink)}
+.btn.bad{background:var(--bad-soft);color:var(--bad)}
+.btn.block{width:100%}
+.btn.sm{min-height:38px;padding:8px 12px;font-size:15px;border-radius:10px}
+.btn:disabled{opacity:.45}
+.iconbtn{border:0;background:transparent;width:44px;height:44px;border-radius:12px;display:grid;place-items:center;cursor:pointer;color:var(--muted)}
+.iconbtn:active{background:var(--line)}
+
+/* Day nav */
+.daynav{display:flex;align-items:center;justify-content:space-between;margin:6px 0 4px}
+.daynav .t{font-size:22px;font-weight:700;text-transform:capitalize;letter-spacing:-.01em}
+.daynav .s{font-size:14px;color:var(--muted)}
+
+/* Hero */
+.hero{background:var(--pri);color:var(--pri-ink);border-radius:20px;padding:18px;margin-top:12px}
+.hero .k{font-size:13px;text-transform:uppercase;letter-spacing:.08em;opacity:.85;font-weight:600}
+.hero .m{font-size:24px;font-weight:700;margin-top:4px;line-height:1.2}
+.hero .d{opacity:.9;margin-top:2px}
+.hero .w{font-size:15px;margin-top:10px;font-weight:600;opacity:.95}
+.hero.done{background:var(--ok-soft);color:var(--ok)}
+
+.alert{border-radius:14px;padding:12px 14px;display:flex;gap:12px;align-items:flex-start;margin-top:10px;font-size:15px}
+.alert.warn{background:var(--warn-soft);color:var(--warn)}
+.alert.bad{background:var(--bad-soft);color:var(--bad)}
+.alert.info{background:var(--pri-soft);color:var(--pri)}
+.alert b{font-weight:700}
+.alert .x{margin-left:auto}
+
+/* Dose list */
+.dose{display:flex;align-items:center;gap:12px;padding:14px 14px;border-bottom:1px solid var(--line);cursor:pointer}
+.dose:last-child{border-bottom:0}
+.dose .time{font-variant-numeric:tabular-nums;font-weight:700;font-size:18px;width:56px;flex:none}
+.dot{width:12px;height:12px;border-radius:50%;flex:none}
+.dose .nm{font-weight:600;line-height:1.25}
+.dose .sub{font-size:14px;color:var(--muted)}
+.dose.taken .nm,.dose.skipped .nm{color:var(--muted)}
+.dose.taken .time,.dose.skipped .time{color:var(--muted)}
+.tag{font-size:13px;font-weight:600;padding:3px 8px;border-radius:999px;white-space:nowrap}
+.tag.ok{background:var(--ok-soft);color:var(--ok)}
+.tag.late{background:var(--bad-soft);color:var(--bad)}
+.tag.now{background:var(--warn-soft);color:var(--warn)}
+.tag.skip{background:var(--line);color:var(--muted)}
+.tag.pend{background:transparent;color:var(--muted);border:1px solid var(--line)}
+.take{border:0;background:var(--pri);color:var(--pri-ink);font-weight:700;border-radius:12px;min-width:84px;min-height:44px;padding:0 14px;cursor:pointer}
+.take.soft{background:var(--pri-soft);color:var(--pri)}
+
+/* Med cards */
+.med{padding:16px;margin-bottom:12px}
+.med .nm{font-size:19px;font-weight:700;line-height:1.2}
+.med .sch{font-size:15px;color:var(--muted);margin-top:2px}
+.bar{height:8px;border-radius:99px;background:var(--line);overflow:hidden;margin:12px 0 6px}
+.bar i{display:block;height:100%;border-radius:99px;background:var(--ok)}
+.bar.warn i{background:var(--warn)}
+.bar.bad i{background:var(--bad)}
+.stockline{display:flex;justify-content:space-between;gap:8px;font-size:15px;flex-wrap:wrap}
+.med .acts{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.med.off{opacity:.55}
+body.v-meds main{padding-bottom:90px}
+.empty{text-align:center;padding:36px 20px}
+.empty svg{width:72px;height:72px;opacity:.9}
+.empty .t{font-weight:700;font-size:19px;margin:10px 0 4px}
+
+/* History */
+.hday{margin-top:16px}
+.hday .h{display:flex;justify-content:space-between;align-items:baseline;margin:0 4px 6px;font-weight:700;text-transform:capitalize}
+.hitem{display:flex;gap:12px;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line);font-size:15px}
+.hitem:last-child{border-bottom:0}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px}
+.stat{padding:12px;text-align:center}
+.stat .v{font-size:24px;font-weight:700;font-variant-numeric:tabular-nums}
+.stat .l{font-size:13px;color:var(--muted)}
+
+/* Settings list */
+.set{padding:14px 16px;border-bottom:1px solid var(--line)}
+.set:last-child{border-bottom:0}
+.set .t{font-weight:600}
+.set .d{font-size:14px;color:var(--muted);margin-top:2px}
+.set .acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+
+/* Bottom nav */
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--card);border-top:1px solid var(--line);
+  display:flex;justify-content:space-around;padding:6px 6px calc(6px + env(safe-area-inset-bottom))}
+nav.tabs button{flex:1;border:0;background:transparent;display:flex;flex-direction:column;align-items:center;gap:2px;
+  padding:6px 0;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;border-radius:12px;max-width:120px}
+nav.tabs button svg{width:26px;height:26px}
+nav.tabs button.on{color:var(--pri)}
+.fab{position:fixed;right:18px;bottom:calc(86px + env(safe-area-inset-bottom));z-index:6;border:0;border-radius:18px;
+  background:var(--pri);color:var(--pri-ink);height:58px;padding:0 20px;font-weight:700;display:flex;align-items:center;gap:8px;
+  box-shadow:0 6px 18px rgba(15,118,110,.35);cursor:pointer}
+.fab svg{width:22px;height:22px}
+.fab[hidden]{display:none}
+.set.switch{padding:14px 16px}
+
+/* Sheet */
+dialog.sheet{border:0;padding:0;margin:auto auto 0;width:100%;max-width:640px;max-height:92vh;border-radius:22px 22px 0 0;
+  background:var(--card);color:var(--ink)}
+dialog.sheet::backdrop{background:rgba(0,0,0,.4)}
+@media (min-width:700px){dialog.sheet{margin:auto;border-radius:22px}}
+.sheet .hd{position:sticky;top:0;background:var(--card);padding:14px 16px 10px;display:flex;align-items:center;gap:8px;
+  border-bottom:1px solid var(--line);z-index:1}
+.sheet .hd .t{font-weight:700;font-size:19px;flex:1}
+.sheet .bd{padding:16px 16px calc(20px + env(safe-area-inset-bottom))}
+.field{margin-bottom:16px}
+.field label.l{display:block;font-weight:600;font-size:15px;margin-bottom:6px}
+.field .hint{font-size:13px;color:var(--muted);margin-top:4px}
+.in{width:100%;border:1px solid var(--line);background:var(--bg);border-radius:12px;padding:12px;min-height:48px;outline:none}
+.in:focus{border-color:var(--pri);box-shadow:0 0 0 3px var(--pri-soft)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.seg button{border:1px solid var(--line);background:var(--bg);border-radius:12px;min-height:46px;font-weight:600;font-size:15px;cursor:pointer;padding:6px}
+.seg button.on{border-color:var(--pri);background:var(--pri-soft);color:var(--pri)}
+.days{display:flex;gap:6px;flex-wrap:wrap}
+.days button{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--bg);font-weight:700;cursor:pointer}
+.days button.on{background:var(--pri);color:var(--pri-ink);border-color:var(--pri)}
+.colors{display:flex;gap:10px;flex-wrap:wrap}
+.colors button{width:36px;height:36px;border-radius:50%;border:3px solid transparent;cursor:pointer}
+.colors button.on{border-color:var(--ink)}
+.timerow{display:flex;gap:8px;margin-bottom:8px}
+.timerow .in{flex:1}
+.switch{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 0}
+.switch input{width:52px;height:30px;appearance:none;background:var(--line);border-radius:99px;position:relative;cursor:pointer;flex:none;transition:.2s}
+.switch input::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 2px rgba(0,0,0,.3)}
+.switch input:checked{background:var(--pri)}
+.switch input:checked::after{left:25px}
+.quick{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.prof{display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid var(--line)}
+.prof:last-child{border-bottom:0}
+.prof .av{width:36px;height:36px;border-radius:50%;background:var(--pri);color:var(--pri-ink);display:grid;place-items:center;font-weight:700}
+.toast{position:fixed;left:50%;bottom:calc(150px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(20px);
+  background:#1c1f23;color:#fff;padding:12px 18px;border-radius:14px;font-size:15px;opacity:0;transition:.25s;z-index:50;
+  max-width:90vw;text-align:center;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.steps{margin:6px 0 0;padding-left:20px;font-size:15px}
+.steps li{margin:4px 0}
+select.in{appearance:auto}
+</style>
+</head>
+<body>
+<header class="top" id="top">
+  <div class="brand">
+    <svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="16" fill="#0f766e"/><g transform="rotate(-40 32 32)"><rect x="12" y="23" width="40" height="18" rx="9" fill="#fff"/><path d="M32 23h11a9 9 0 0 1 0 18H32z" fill="#99e0d6"/></g></svg>
+    Pastillero
+  </div>
+  <button class="chip-profile" id="profileChip" aria-label="Cambiar persona"><span class="av" id="profileAv"></span><span class="n" id="profileName"></span></button>
+</header>
+
+<main id="view"></main>
+
+<button class="fab" id="fab" hidden>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+  Agregar
+</button>
+
+<nav class="tabs" id="tabs">
+  <button data-v="hoy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Hoy</button>
+  <button data-v="meds"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="8" rx="4" transform="rotate(-35 12 12)"/><path d="M9.6 8.6l4.8 6.8"/></svg>Medicamentos</button>
+  <button data-v="hist"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16M4 12h16M4 19h10"/></svg>Historial</button>
+  <button data-v="ajustes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Ajustes</button>
+</nav>
+
+<dialog class="sheet" id="sheet"></dialog>
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+/* =========================================================
+   Pastillero — recordatorio de medicamentos (PWA)
+   Datos: localStorage del propio dispositivo (no se envían a ningún servidor)
+   ========================================================= */
+
+// ---------- utilidades ----------
+const $ = s => document.querySelector(s);
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+const pad = n => String(n).padStart(2, '0');
+const ymd = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const hm = d => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+const parseYmd = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+const startOfDay = d => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; };
+const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+const dayDiff = (a, b) => Math.round((startOfDay(b) - startOfDay(a)) / 86400000);
+const atTime = (day, t) => { const [h, m] = t.split(':').map(Number); const d = new Date(day); d.setHours(h, m, 0, 0); return d; };
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const num = n => Number(n).toLocaleString('es-CL', { maximumFractionDigits: 2 });
+const fmtDayLong = d => d.toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' });
+const fmtDayShort = d => d.toLocaleDateString('es-CL', { weekday: 'short', day: 'numeric', month: 'short' });
+const DOW = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+const DOW1 = ['D', 'L', 'M', 'X', 'J', 'V', 'S'];
+const COLORS = ['#0f766e', '#2563eb', '#7c3aed', '#db2777', '#ea580c', '#ca8a04', '#16a34a', '#475569'];
+const UNITS = {
+  'comprimido': 'comprimidos', 'cápsula': 'cápsulas', 'gota': 'gotas', 'ml': 'ml', 'sobre': 'sobres',
+  'inhalación': 'inhalaciones', 'aplicación': 'aplicaciones', 'ampolla': 'ampollas', 'parche': 'parches',
+  'unidad': 'unidades', 'UI': 'UI'
+};
+const qty = (n, unit) => `${num(n)} ${Number(n) === 1 ? unit : (UNITS[unit] || unit)}`;
+
+// ---------- estado ----------
+const KEY = 'pastillero_v1';
+let S;
+function defaultState() {
+  const p = { id: uid(), name: 'Yo' };
+  return { v: 1, profiles: [p], active: p.id, meds: [], logs: [], settings: { sound: true }, notified: {} };
+}
+function load() {
+  try { const r = localStorage.getItem(KEY); S = r ? JSON.parse(r) : defaultState(); }
+  catch (e) { S = defaultState(); }
+  S.profiles ||= []; S.meds ||= []; S.logs ||= []; S.settings ||= { sound: true }; S.notified ||= {};
+  if (!S.profiles.length) S.profiles.push({ id: uid(), name: 'Yo' });
+  if (!S.profiles.find(p => p.id === S.active)) S.active = S.profiles[0].id;
+  // limpiar marcas de notificación antiguas (> 3 días)
+  const lim = ymd(addDays(new Date(), -3));
+  for (const k of Object.keys(S.notified)) {
+    const v = S.notified[k];
+    const d = k.startsWith('stock|') ? v : k.split('|')[1];
+    if (!d || d < lim) delete S.notified[k];
+  }
+}
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify(S)); }
+  catch (e) { toast('No se pudo guardar en este dispositivo'); }
+  logIdx = null;
+}
+const profile = () => S.profiles.find(p => p.id === S.active);
+const myMeds = () => S.meds.filter(m => m.profileId === S.active);
+const medById = id => S.meds.find(m => m.id === id);
+
+let logIdx = null; // Map key -> log
+function logMap() {
+  if (!logIdx) { logIdx = new Map(); for (const l of S.logs) if (l.key) logIdx.set(l.key, l); }
+  return logIdx;
+}
+
+// ---------- motor de horarios ----------
+function scheduleTimes(m, day) {
+  if (!m.active) return [];
+  const s = m.schedule, ds = ymd(day);
+  if (m.startDate && ds < m.startDate) return [];
+  if (m.endDate && ds > m.endDate) return [];
+  switch (s.type) {
+    case 'daily': return [...s.times];
+    case 'weekly': return s.weekdays.includes(day.getDay()) ? [...s.times] : [];
+    case 'ndays': {
+      const diff = dayDiff(parseYmd(m.startDate || ds), day);
+      return diff >= 0 && diff % s.everyDays === 0 ? [...s.times] : [];
+    }
+    case 'hours': {
+      const N = Number(s.everyHours), out = [];
+      if (24 % N === 0) {
+        const [h, mi] = s.startTime.split(':').map(Number);
+        for (let k = 0; k < 24 / N; k++) out.push(pad((h + k * N) % 24) + ':' + pad(mi));
+        return m.startDate === ds ? out.filter(t => t >= s.startTime) : out;
+      }
+      const anchor = atTime(parseYmd(m.startDate || ds), s.startTime).getTime();
+      const step = N * 3600000, d0 = startOfDay(day).getTime(), d1 = d0 + 86400000;
+      let k = Math.max(0, Math.ceil((d0 - anchor) / step));
+      for (let t = anchor + k * step; t < d1; t += step) out.push(hm(new Date(t)));
+      return out;
+    }
+  }
+  return [];
+}
+function dosesForDay(m, day) {
+  const d0 = startOfDay(day);
+  return [...new Set(scheduleTimes(m, d0))].sort().map(t => ({ key: `${m.id}|${ymd(d0)}|${t}`, med: m, t, time: atTime(d0, t) }));
+}
+function scheduleText(m) {
+  const s = m.schedule, times = (s.times || []).join(', ');
+  switch (s.type) {
+    case 'daily': return `Todos los días · ${times}`;
+    case 'weekly': return `${s.weekdays.slice().sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7)).map(d => DOW[d]).join(', ')} · ${times}`;
+    case 'ndays': return `Cada ${s.everyDays} días · ${times}`;
+    case 'hours': return `Cada ${s.everyHours} h desde las ${s.startTime}`;
+  }
+  return '';
+}
+// Simula las tomas futuras para saber cuándo se acaba el stock
+function runOut(m) {
+  if (!m.active) return null;
+  const p = Number(m.perDose) || 0; if (p <= 0) return null;
+  let stock = Number(m.stock) || 0;
+  const now = Date.now(), lm = logMap();
+  let day = startOfDay(new Date());
+  for (let i = 0; i < 400; i++) {
+    if (m.endDate && ymd(day) > m.endDate) return { endOk: true };
+    for (const d of dosesForDay(m, day)) {
+      if (d.time.getTime() < now || lm.has(d.key)) continue;
+      if (stock + 1e-9 < p) return { date: d.time, days: Math.max(0, (d.time.getTime() - now) / 86400000) };
+      stock -= p;
+    }
+    day = addDays(day, 1);
+  }
+  return { long: true };
+}
+function stockStatus(m) {
+  const r = runOut(m), alertDays = Number(m.alertDays ?? 5);
+  if (!r) return { level: 'none', text: '', r };
+  if (r.endOk) return { level: 'ok', text: 'Alcanza hasta el fin del tratamiento', r };
+  if (r.long) return { level: 'ok', text: 'Alcanza para más de un año', r };
+  const d = Math.floor(r.days);
+  const level = Number(m.stock) < Number(m.perDose) ? 'bad' : (r.days <= alertDays ? (r.days <= 2 ? 'bad' : 'warn') : 'ok');
+  let text;
+  if (Number(m.stock) < Number(m.perDose)) text = 'Sin stock suficiente para la próxima toma';
+  else if (d < 1) text = 'Alcanza para menos de 1 día';
+  else text = `Alcanza para ${d} ${d === 1 ? 'día' : 'días'} · hasta ${fmtDayShort(r.date)}`;
+  return { level, text, r, days: r.days };
+}
+
+// ---------- registro de tomas ----------
+function takeDose(key, when) {
+  const [medId] = key.split('|'); const m = medById(medId); if (!m) return;
+  if (logMap().has(key)) return;
+  const units = Math.min(Number(m.perDose) || 0, Math.max(0, Number(m.stock) || 0));
+  const parts = key.split('|');
+  S.logs.push({ id: uid(), profileId: m.profileId, medId, key, scheduled: parts[1] !== 'extra' ? `${parts[1]}T${parts[2]}` : null,
+    takenAt: (when || new Date()).toISOString(), status: 'taken', units });
+  m.stock = Math.round((Number(m.stock) - units) * 100) / 100;
+  save();
+}
+function skipDose(key) {
+  const [medId] = key.split('|'); const m = medById(medId); if (!m || logMap().has(key)) return;
+  const parts = key.split('|');
+  S.logs.push({ id: uid(), profileId: m.profileId, medId, key, scheduled: `${parts[1]}T${parts[2]}`, takenAt: new Date().toISOString(), status: 'skipped', units: 0 });
+  save();
+}
+function undoDose(key) {
+  const i = S.logs.findIndex(l => l.key === key); if (i < 0) return;
+  const l = S.logs[i], m = medById(l.medId);
+  if (m && l.status === 'taken') m.stock = Math.round((Number(m.stock) + Number(l.units || 0)) * 100) / 100;
+  S.logs.splice(i, 1); save();
+}
+
+// ---------- UI general ----------
+let view = 'hoy', viewDay = startOfDay(new Date()), histFilter = '';
+function toast(msg) {
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), 2600);
+}
+function setView(v) {
+  view = v; if (v === 'hoy') viewDay = startOfDay(new Date());
+  render(); window.scrollTo(0, 0);
+}
+function render() {
+  const p = profile();
+  $('#profileName').textContent = p.name; $('#profileAv').textContent = (p.name.trim()[0] || '?').toUpperCase();
+  document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.v === view));
+  $('#fab').hidden = view !== 'meds'; document.body.className = 'v-' + view;
+  ({ hoy: renderHoy, meds: renderMeds, hist: renderHist, ajustes: renderAjustes })[view]();
+}
+
+const sheet = $('#sheet');
+function openSheet(title, body, onMount) {
+  sheet.innerHTML = `<div class="hd"><div class="t">${esc(title)}</div><button class="iconbtn" data-close aria-label="Cerrar">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="bd">${body}</div>`;
+  sheet.querySelector('[data-close]').onclick = closeSheet;
+  if (!sheet.open) sheet.showModal();
+  sheet.scrollTop = 0;
+  onMount && onMount(sheet);
+}
+function closeSheet() { if (sheet.open) sheet.close(); }
+sheet.addEventListener('click', e => { if (e.target === sheet) closeSheet(); });
+function confirmBox(title, msg, okLabel = 'Aceptar', danger = false) {
+  return new Promise(res => {
+    openSheet(title, `<p style="margin-top:0">${msg}</p>
+      <div class="grid2"><button class="btn ghost" id="cNo">Cancelar</button><button class="btn ${danger ? 'bad' : 'pri'}" id="cOk">${esc(okLabel)}</button></div>`,
+      s => { s.querySelector('#cNo').onclick = () => { closeSheet(); res(false); }; s.querySelector('#cOk').onclick = () => { closeSheet(); res(true); }; });
+  });
+}
+
+// ---------- Vista: HOY ----------
+function doseState(d, now) {
+  const l = logMap().get(d.key);
+  if (l) return l.status === 'taken' ? { cls: 'taken', tag: `<span class="tag ok">✓ ${hm(new Date(l.takenAt))}</span>` } : { cls: 'skipped', tag: '<span class="tag skip">Omitida</span>' };
+  const diff = now - d.time.getTime();
+  if (diff < 0) return { cls: 'pend', tag: '', btn: diff > -3600000 ? 'soft' : 'soft' };
+  if (diff <= 30 * 60000) return { cls: 'now', tag: '<span class="tag now">Ahora</span>', btn: 'pri' };
+  return { cls: 'late', tag: '<span class="tag late">Atrasada</span>', btn: 'pri' };
+}
+function nextDose() {
+  const now = Date.now(), lm = logMap();
+  let best = null;
+  for (let i = 0; i < 8 && !best; i++) {
+    const day = addDays(startOfDay(new Date()), i);
+    for (const m of myMeds()) for (const d of dosesForDay(m, day)) {
+      if (lm.has(d.key) || d.time.getTime() < now - 30 * 60000) continue;
+      if (!best || d.time < best.time) best = d;
+    }
+  }
+  return best;
+}
+function untilText(t) {
+  const mins = Math.round((t - Date.now()) / 60000);
+  if (mins <= 0) return 'Es hora de tomarla';
+  if (mins < 60) return `En ${mins} min`;
+  const h = Math.floor(mins / 60), mm = mins % 60;
+  if (h < 24) return `En ${h} h${mm ? ' ' + mm + ' min' : ''}`;
+  return fmtDayLong(t);
+}
+function renderHoy() {
+  const now = Date.now(), today = startOfDay(new Date()), isToday = +viewDay === +today;
+  const meds = myMeds();
+  const doses = meds.flatMap(m => dosesForDay(m, viewDay)).sort((a, b) => a.time - b.time || a.med.name.localeCompare(b.med.name));
+  let h = `<div class="daynav">
+    <button class="iconbtn" id="prevDay" aria-label="Día anterior"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M15 6l-6 6 6 6"/></svg></button>
+    <div style="text-align:center"><div class="t">${isToday ? 'Hoy' : esc(fmtDayLong(viewDay))}</div><div class="s">${isToday ? esc(fmtDayLong(viewDay)) : '<a href="#" id="goToday" style="color:var(--pri)">Volver a hoy</a>'}</div></div>
+    <button class="iconbtn" id="nextDay" aria-label="Día siguiente"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg></button>
+  </div>`;
+
+  if (!meds.length) {
+    h += `<div class="card empty" style="margin-top:12px">${pillSvg()}<div class="t">Aún no hay medicamentos</div>
+      <p class="muted" style="margin:0 0 16px">Agrega cada medicamento con su horario y stock. La app te avisará cuándo tomarlo y cuándo comprar más.</p>
+      <button class="btn pri" id="addFirst">Agregar medicamento</button></div>`;
+    $('#view').innerHTML = h + installHint(); bindHoy(); return;
+  }
+
+  if (isToday) {
+    // alertas
+    if ('Notification' in window && Notification.permission === 'default')
+      h += `<div class="alert info"><div class="grow"><b>Activa los avisos</b><br>Para que el teléfono te recuerde cada toma.</div><button class="btn sm pri" id="askNotif">Activar</button></div>`;
+    for (const m of meds) {
+      const st = stockStatus(m);
+      if (st.level === 'warn' || st.level === 'bad')
+        h += `<div class="alert ${st.level}"><div class="grow"><b>${esc(m.name)}:</b> ${esc(st.text)}. Quedan ${esc(qty(m.stock, m.unit))}.</div><button class="btn sm ${st.level === 'bad' ? 'bad' : 'ghost'}" data-refill="${m.id}">Reponer</button></div>`;
+    }
+    const nd = nextDose();
+    const pendingToday = doses.filter(d => !logMap().has(d.key));
+    const late = pendingToday.filter(d => now - d.time.getTime() > 30 * 60000).length;
+    if (nd) {
+      h += `<div class="hero"><div class="k">${nd.time.getTime() <= now ? 'Toca ahora' : 'Próxima toma'} · ${esc(nd.t)}</div>
+        <div class="m">${esc(nd.med.name)}${nd.med.dose ? ' <span style="font-weight:500;opacity:.85">' + esc(nd.med.dose) + '</span>' : ''}</div>
+        <div class="d">${esc(qty(nd.med.perDose, nd.med.unit))}${nd.med.notes ? ' · ' + esc(nd.med.notes) : ''}</div>
+        <div class="w">${esc(untilText(nd.time))}${late ? ` · ${late} atrasada${late > 1 ? 's' : ''}` : ''}</div></div>`;
+    } else if (doses.length) {
+      h += `<div class="hero done"><div class="m">✓ Todo al día</div><div class="d">No quedan tomas pendientes.</div></div>`;
+    }
+  }
+
+  h += `<h2>${doses.length ? `Tomas del día (${doses.filter(d => logMap().get(d.key)?.status === 'taken').length}/${doses.length})` : 'Tomas del día'}</h2>`;
+  if (!doses.length) h += `<div class="card pad muted">No hay tomas programadas para este día.</div>`;
+  else {
+    h += `<div class="card">`;
+    for (const d of doses) {
+      const st = doseState(d, now), m = d.med, logged = logMap().has(d.key);
+      h += `<div class="dose ${st.cls}" data-dose="${esc(d.key)}">
+        <div class="time">${esc(d.t)}</div><span class="dot" style="background:${esc(m.color)}"></span>
+        <div class="grow"><div class="nm">${esc(m.name)}${m.dose ? ' · ' + esc(m.dose) : ''}</div>
+        <div class="sub">${esc(qty(m.perDose, m.unit))}${m.notes ? ' · ' + esc(m.notes) : ''}</div>${st.tag ? `<div style="margin-top:4px">${st.tag}</div>` : ''}</div>
+        ${!logged ? `<button class="take ${st.btn === 'pri' ? '' : 'soft'}" data-take="${esc(d.key)}">Tomar</button>` : ''}
+      </div>`;
+    }
+    h += `</div>`;
+  }
+  $('#view').innerHTML = h + (isToday ? installHint() : '');
+  bindHoy();
+}
+function bindHoy() {
+  $('#prevDay') && ($('#prevDay').onclick = () => { viewDay = addDays(viewDay, -1); renderHoy(); });
+  $('#nextDay') && ($('#nextDay').onclick = () => { viewDay = addDays(viewDay, 1); renderHoy(); });
+  $('#goToday') && ($('#goToday').onclick = e => { e.preventDefault(); viewDay = startOfDay(new Date()); renderHoy(); });
+  $('#addFirst') && ($('#addFirst').onclick = () => medForm());
+  $('#askNotif') && ($('#askNotif').onclick = askNotifications);
+  $('#instBtn') && ($('#instBtn').onclick = doInstall);
+  document.querySelectorAll('[data-refill]').forEach(b => b.onclick = e => { e.stopPropagation(); refillSheet(b.dataset.refill); });
+  document.querySelectorAll('[data-take]').forEach(b => b.onclick = e => {
+    e.stopPropagation(); unlockAudio(); const key = b.dataset.take;
+    const t = atTime(parseYmd(key.split('|')[1]), key.split('|')[2]);
+    // si es una toma de otro día, se registra a la hora programada
+    takeDose(key, +startOfDay(t) === +startOfDay(new Date()) ? new Date() : t);
+    toast('Toma registrada ✓'); render();
+  });
+  document.querySelectorAll('[data-dose]').forEach(r => r.onclick = () => doseSheet(r.dataset.dose));
+}
+function doseSheet(key) {
+  const [medId, ds, t] = key.split('|'); const m = medById(medId); if (!m) return;
+  const l = logMap().get(key);
+  const nowT = hm(new Date());
+  let body = `<div class="row" style="margin-bottom:14px"><span class="dot" style="background:${esc(m.color)};width:16px;height:16px"></span>
+    <div class="grow"><div style="font-weight:700;font-size:20px">${esc(m.name)}${m.dose ? ' · ' + esc(m.dose) : ''}</div>
+    <div class="muted">${esc(qty(m.perDose, m.unit))} · programada ${esc(fmtDayShort(parseYmd(ds)))} a las ${esc(t)}</div></div></div>
+    ${m.notes ? `<div class="alert info" style="margin:0 0 14px">${esc(m.notes)}</div>` : ''}`;
+  if (l) {
+    body += `<p>${l.status === 'taken' ? `Registrada como <b>tomada</b> el ${esc(fmtDayShort(new Date(l.takenAt)))} a las <b>${esc(hm(new Date(l.takenAt)))}</b>.` : 'Registrada como <b>omitida</b>.'}</p>
+      <button class="btn bad block" id="dUndo">Deshacer registro</button>`;
+  } else {
+    body += `<button class="btn pri block" id="dNow">Tomada ahora (${nowT})</button>
+      <div class="field" style="margin-top:16px"><label class="l">¿La tomaste a otra hora?</label>
+      <div class="row"><input type="date" class="in" id="dDate" value="${ds}"><input type="time" class="in" id="dTime" value="${t}"></div></div>
+      <button class="btn block" id="dAt">Registrar a esa hora</button>
+      <button class="btn ghost block" id="dSkip" style="margin-top:12px">Omitir esta dosis</button>`;
+  }
+  openSheet('Toma', body, s => {
+    s.querySelector('#dUndo') && (s.querySelector('#dUndo').onclick = () => { undoDose(key); closeSheet(); toast('Registro eliminado'); render(); });
+    s.querySelector('#dNow') && (s.querySelector('#dNow').onclick = () => { takeDose(key, new Date()); closeSheet(); toast('Toma registrada ✓'); render(); });
+    s.querySelector('#dAt') && (s.querySelector('#dAt').onclick = () => {
+      const dd = s.querySelector('#dDate').value, tt = s.querySelector('#dTime').value; if (!dd || !tt) return;
+      takeDose(key, atTime(parseYmd(dd), tt)); closeSheet(); toast('Toma registrada ✓'); render();
+    });
+    s.querySelector('#dSkip') && (s.querySelector('#dSkip').onclick = () => { skipDose(key); closeSheet(); toast('Dosis omitida'); render(); });
+  });
+}
+
+// ---------- Vista: MEDICAMENTOS ----------
+function renderMeds() {
+  const meds = myMeds().slice().sort((a, b) => (b.active - a.active) || a.name.localeCompare(b.name));
+  let h = `<h2>Medicamentos de ${esc(profile().name)}</h2>`;
+  if (!meds.length) h += `<div class="card empty">${pillSvg()}<div class="t">Sin medicamentos</div><p class="muted" style="margin:0 0 16px">Toca “Agregar” para registrar el primero.</p><button class="btn pri" id="addFirst">Agregar medicamento</button></div>`;
+  for (const m of meds) {
+    const st = stockStatus(m);
+    const ru = st.r && st.r.days != null ? st.r.days : null;
+    const pct = ru == null ? 100 : Math.max(3, Math.min(100, ru / 30 * 100));
+    h += `<div class="card med ${m.active ? '' : 'off'}">
+      <div class="row"><span class="dot" style="background:${esc(m.color)};width:14px;height:14px"></span>
+        <div class="grow"><div class="nm">${esc(m.name)}${m.dose ? ` <span class="muted" style="font-weight:500">${esc(m.dose)}</span>` : ''}</div>
+        <div class="sch">${m.active ? esc(qty(m.perDose, m.unit)) + ' · ' + esc(scheduleText(m)) : 'Pausado'}</div></div></div>
+      ${m.notes ? `<div class="small muted" style="margin-top:6px">${esc(m.notes)}</div>` : ''}
+      ${m.endDate ? `<div class="small muted" style="margin-top:4px">Tratamiento hasta ${esc(fmtDayShort(parseYmd(m.endDate)))}</div>` : ''}
+      ${m.active ? `<div class="bar ${st.level}"><i style="width:${pct}%"></i></div>` : ''}
+      <div class="stockline"><b>Stock: ${esc(qty(m.stock, m.unit))}</b><span class="${st.level === 'bad' ? '' : 'muted'}" style="${st.level === 'bad' ? 'color:var(--bad)' : st.level === 'warn' ? 'color:var(--warn)' : ''}">${esc(st.text)}</span></div>
+      <div class="acts">
+        <button class="btn sm" data-refill="${m.id}">Reponer stock</button>
+        <button class="btn sm ghost" data-extra="${m.id}">Toma extra</button>
+        <button class="btn sm ghost" data-edit="${m.id}">Editar</button>
+      </div></div>`;
+  }
+  $('#view').innerHTML = h;
+  $('#addFirst') && ($('#addFirst').onclick = () => medForm());
+  document.querySelectorAll('[data-refill]').forEach(b => b.onclick = () => refillSheet(b.dataset.refill));
+  document.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => medForm(b.dataset.edit));
+  document.querySelectorAll('[data-extra]').forEach(b => b.onclick = async () => {
+    const m = medById(b.dataset.extra);
+    if (await confirmBox('Toma extra', `¿Registrar una toma fuera de horario de <b>${esc(m.name)}</b> (${esc(qty(m.perDose, m.unit))}) ahora?`, 'Registrar')) {
+      takeDose(`${m.id}|extra|${uid()}`, new Date()); toast('Toma extra registrada'); render();
+    }
+  });
+}
+function refillSheet(id) {
+  const m = medById(id);
+  openSheet('Stock · ' + m.name, `
+    <p style="margin-top:0">Stock actual: <b>${esc(qty(m.stock, m.unit))}</b></p>
+    <div class="field"><label class="l">¿Cuántas unidades agregas?</label>
+      <input class="in" type="number" inputmode="decimal" min="0" step="any" id="rAdd" placeholder="Ej: 30">
+      <div class="quick">${[10, 14, 20, 28, 30, 60].map(n => `<button class="btn sm ghost" data-q="${n}">+${n}</button>`).join('')}</div></div>
+    <button class="btn pri block" id="rOk">Sumar al stock</button>
+    <div class="field" style="margin-top:22px"><label class="l">O corrige el stock exacto (lo que cuentas en la caja)</label>
+      <div class="row"><input class="in" type="number" inputmode="decimal" min="0" step="any" id="rSet" value="${m.stock}"><button class="btn" id="rSetOk">Guardar</button></div></div>`,
+    s => {
+      s.querySelectorAll('[data-q]').forEach(b => b.onclick = () => { s.querySelector('#rAdd').value = b.dataset.q; });
+      s.querySelector('#rOk').onclick = () => {
+        const v = parseFloat(s.querySelector('#rAdd').value.replace(',', '.')); if (!(v > 0)) return toast('Ingresa una cantidad');
+        m.stock = Math.round((Number(m.stock) + v) * 100) / 100; resetStockNotice(m); save(); closeSheet(); toast(`Stock: ${qty(m.stock, m.unit)}`); render();
+      };
+      s.querySelector('#rSetOk').onclick = () => {
+        const v = parseFloat(String(s.querySelector('#rSet').value).replace(',', '.')); if (!(v >= 0)) return toast('Valor no válido');
+        m.stock = v; resetStockNotice(m); save(); closeSheet(); toast('Stock actualizado'); render();
+      };
+    });
+}
+function resetStockNotice(m) { delete S.notified['stock|' + m.id]; }
+
+function medForm(id) {
+  const ed = id ? medById(id) : null;
+  const m = ed ? JSON.parse(JSON.stringify(ed)) : {
+    name: '', dose: '', unit: 'comprimido', perDose: 1, stock: '', color: COLORS[myMeds().length % COLORS.length],
+    schedule: { type: 'daily', times: ['08:00'], everyHours: 8, startTime: '08:00', weekdays: [1, 3, 5], everyDays: 2 },
+    startDate: ymd(new Date()), endDate: '', notes: '', active: true, alertDays: 5
+  };
+  const s0 = m.schedule; s0.times ||= ['08:00']; s0.everyHours ||= 8; s0.startTime ||= '08:00'; s0.weekdays ||= [1, 3, 5]; s0.everyDays ||= 2;
+  const body = `
+    <div class="field"><label class="l">Nombre del medicamento *</label><input class="in" id="fName" value="${esc(m.name)}" placeholder="Ej: Losartán" autocomplete="off"></div>
+    <div class="grid2">
+      <div class="field"><label class="l">Concentración</label><input class="in" id="fDose" value="${esc(m.dose)}" placeholder="Ej: 50 mg"></div>
+      <div class="field"><label class="l">Forma</label><select class="in" id="fUnit">${Object.keys(UNITS).map(u => `<option ${u === m.unit ? 'selected' : ''}>${u}</option>`).join('')}</select></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label class="l">Cantidad por toma *</label><input class="in" id="fPer" type="number" inputmode="decimal" min="0" step="any" value="${esc(m.perDose)}"></div>
+      <div class="field"><label class="l">Stock actual *</label><input class="in" id="fStock" type="number" inputmode="decimal" min="0" step="any" value="${esc(m.stock)}" placeholder="Unidades"></div>
+    </div>
+    <div class="field"><label class="l">Frecuencia</label>
+      <div class="seg" id="fType">
+        <button type="button" data-t="daily">Todos los días</button><button type="button" data-t="hours">Cada X horas</button>
+        <button type="button" data-t="weekly">Días de la semana</button><button type="button" data-t="ndays">Cada X días</button>
+      </div></div>
+    <div id="fSched"></div>
+    <div class="grid2">
+      <div class="field"><label class="l">Desde</label><input class="in" type="date" id="fStart" value="${esc(m.startDate || ymd(new Date()))}"></div>
+      <div class="field"><label class="l">Hasta (opcional)</label><input class="in" type="date" id="fEnd" value="${esc(m.endDate || '')}"></div>
+    </div>
+    <div class="field"><label class="l">Avisarme cuando quede stock para</label>
+      <div class="row"><input class="in" type="number" inputmode="numeric" min="1" max="60" id="fAlert" value="${esc(m.alertDays ?? 5)}" style="max-width:110px"><span>días</span></div></div>
+    <div class="field"><label class="l">Indicaciones</label><input class="in" id="fNotes" value="${esc(m.notes)}" placeholder="Ej: con el desayuno, en ayunas…"></div>
+    <div class="field"><label class="l">Color</label><div class="colors" id="fColor">${COLORS.map(c => `<button type="button" data-c="${c}" style="background:${c}" class="${c === m.color ? 'on' : ''}" aria-label="Color"></button>`).join('')}</div></div>
+    <div class="field switch"><div><div style="font-weight:600">Activo</div><div class="small muted">Desactívalo para pausar sin borrar el historial</div></div><input type="checkbox" id="fActive" ${m.active ? 'checked' : ''}></div>
+    <button class="btn pri block" id="fSave">${ed ? 'Guardar cambios' : 'Agregar medicamento'}</button>
+    ${ed ? '<button class="btn bad block" id="fDel" style="margin-top:12px">Eliminar medicamento</button>' : ''}`;
+  openSheet(ed ? 'Editar medicamento' : 'Nuevo medicamento', body, s => {
+    const sch = m.schedule;
+    const drawSched = () => {
+      s.querySelectorAll('#fType button').forEach(b => b.classList.toggle('on', b.dataset.t === sch.type));
+      let h = '';
+      if (sch.type === 'hours') {
+        h = `<div class="grid2"><div class="field"><label class="l">Cada</label><select class="in" id="fEvery">${[2, 3, 4, 5, 6, 8, 12, 24, 36, 48, 72].map(n => `<option value="${n}" ${n == sch.everyHours ? 'selected' : ''}>${n} horas</option>`).join('')}</select></div>
+          <div class="field"><label class="l">Primera toma</label><input class="in" type="time" id="fFirst" value="${esc(sch.startTime)}"></div></div>`;
+      } else {
+        if (sch.type === 'weekly') h += `<div class="field"><label class="l">Días</label><div class="days" id="fDays">${[1, 2, 3, 4, 5, 6, 0].map(d => `<button type="button" data-d="${d}" class="${sch.weekdays.includes(d) ? 'on' : ''}">${DOW1[d]}</button>`).join('')}</div></div>`;
+        if (sch.type === 'ndays') h += `<div class="field"><label class="l">Cada cuántos días</label><input class="in" type="number" inputmode="numeric" min="2" max="90" id="fND" value="${esc(sch.everyDays)}"><div class="hint">Se cuenta a partir de la fecha “Desde”.</div></div>`;
+        h += `<div class="field"><label class="l">Horarios</label><div id="fTimes">${sch.times.map((t, i) => `<div class="timerow"><input class="in" type="time" data-i="${i}" value="${esc(t)}">${sch.times.length > 1 ? `<button type="button" class="btn ghost" data-rm="${i}" aria-label="Quitar">✕</button>` : ''}</div>`).join('')}</div>
+          <button type="button" class="btn sm ghost" id="fAddT">+ Agregar horario</button></div>`;
+      }
+      s.querySelector('#fSched').innerHTML = h;
+      s.querySelectorAll('#fTimes input').forEach(inp => inp.onchange = () => { sch.times[+inp.dataset.i] = inp.value; });
+      s.querySelectorAll('[data-rm]').forEach(b => b.onclick = () => { sch.times.splice(+b.dataset.rm, 1); drawSched(); });
+      s.querySelector('#fAddT') && (s.querySelector('#fAddT').onclick = () => {
+        const last = sch.times[sch.times.length - 1] || '08:00'; const [hh, mm] = last.split(':').map(Number);
+        sch.times.push(pad((hh + 12) % 24) + ':' + pad(mm)); drawSched();
+      });
+      s.querySelectorAll('#fDays button').forEach(b => b.onclick = () => {
+        const d = +b.dataset.d; sch.weekdays = sch.weekdays.includes(d) ? sch.weekdays.filter(x => x !== d) : [...sch.weekdays, d]; drawSched();
+      });
+      s.querySelector('#fEvery') && (s.querySelector('#fEvery').onchange = e => { sch.everyHours = +e.target.value; });
+      s.querySelector('#fFirst') && (s.querySelector('#fFirst').onchange = e => { sch.startTime = e.target.value; });
+      s.querySelector('#fND') && (s.querySelector('#fND').onchange = e => { sch.everyDays = Math.max(2, parseInt(e.target.value) || 2); });
+    };
+    s.querySelectorAll('#fType button').forEach(b => b.onclick = () => { sch.type = b.dataset.t; drawSched(); });
+    s.querySelectorAll('#fColor button').forEach(b => b.onclick = () => { m.color = b.dataset.c; s.querySelectorAll('#fColor button').forEach(x => x.classList.toggle('on', x === b)); });
+    drawSched();
+
+    s.querySelector('#fSave').onclick = () => {
+      const g = id => s.querySelector(id);
+      const nm = g('#fName').value.trim();
+      const per = parseFloat(String(g('#fPer').value).replace(',', '.'));
+      const stock = parseFloat(String(g('#fStock').value).replace(',', '.'));
+      if (!nm) return toast('Falta el nombre');
+      if (!(per > 0)) return toast('La cantidad por toma debe ser mayor que 0');
+      if (!(stock >= 0)) return toast('Ingresa el stock actual (puede ser 0)');
+      s.querySelectorAll('#fTimes input').forEach(inp => { sch.times[+inp.dataset.i] = inp.value; });
+      if (g('#fND')) sch.everyDays = Math.max(2, parseInt(g('#fND').value) || 2);
+      if (g('#fFirst')) sch.startTime = g('#fFirst').value;
+      if (sch.type !== 'hours') {
+        sch.times = [...new Set(sch.times.filter(Boolean))].sort();
+        if (!sch.times.length) return toast('Agrega al menos un horario');
+      } else if (!sch.startTime) return toast('Indica la hora de la primera toma');
+      if (sch.type === 'weekly' && !sch.weekdays.length) return toast('Elige al menos un día');
+      const start = g('#fStart').value || ymd(new Date()), end = g('#fEnd').value;
+      if (end && end < start) return toast('La fecha “Hasta” es anterior a “Desde”');
+      const data = { name: nm, dose: g('#fDose').value.trim(), unit: g('#fUnit').value, perDose: per, stock,
+        color: m.color, schedule: sch, startDate: start, endDate: end, notes: g('#fNotes').value.trim(),
+        active: g('#fActive').checked, alertDays: Math.max(1, parseInt(g('#fAlert').value) || 5) };
+      if (ed) Object.assign(ed, data); else S.meds.push({ id: uid(), profileId: S.active, created: new Date().toISOString(), ...data });
+      if (ed) resetStockNotice(ed);
+      save(); closeSheet(); toast(ed ? 'Cambios guardados' : 'Medicamento agregado'); render();
+      if (S.calExported) setTimeout(() => toast('Recuerda volver a exportar al calendario'), 2800);
+    };
+    s.querySelector('#fDel') && (s.querySelector('#fDel').onclick = async () => {
+      const ok = await confirmBox('Eliminar', `¿Eliminar <b>${esc(ed.name)}</b> y todo su historial de tomas? Esta acción no se puede deshacer. Si solo quieres dejar de tomarlo, mejor desactívalo.`, 'Eliminar', true);
+      if (!ok) return medForm(id);
+      S.meds = S.meds.filter(x => x.id !== ed.id); S.logs = S.logs.filter(l => l.medId !== ed.id); save(); toast('Eliminado'); render();
+    });
+  });
+}
+
+// ---------- Vista: HISTORIAL ----------
+function histRows(days) {
+  // devuelve [{day, items:[{time, med, status, scheduled, takenAt}]}]
+  const now = Date.now(), out = [], lm = logMap();
+  const meds = myMeds().filter(m => !histFilter || m.id === histFilter);
+  const medIds = new Set(meds.map(m => m.id));
+  for (let i = 0; i < days; i++) {
+    const day = addDays(startOfDay(new Date()), -i), ds = ymd(day), items = [];
+    for (const m of meds) for (const d of dosesForDay(m, day)) {
+      if (d.time.getTime() > now) continue;
+      const l = lm.get(d.key);
+      items.push({ sort: d.t, med: m, scheduled: d.t, status: l ? l.status : 'missed', takenAt: l ? new Date(l.takenAt) : null });
+    }
+    // tomas extra y tomas registradas de horarios que ya no existen
+    for (const l of S.logs) {
+      if (!medIds.has(l.medId) || l.status !== 'taken') continue;
+      const tk = new Date(l.takenAt);
+      if (l.key.includes('|extra|') && ymd(tk) === ds) items.push({ sort: hm(tk), med: medById(l.medId), scheduled: null, status: 'extra', takenAt: tk });
+    }
+    items.sort((a, b) => a.sort.localeCompare(b.sort));
+    out.push({ day, items });
+  }
+  return out;
+}
+function renderHist() {
+  const meds = myMeds();
+  const rows = histRows(30);
+  const last7 = rows.slice(0, 7).flatMap(r => r.items).filter(i => i.status !== 'extra');
+  const taken = last7.filter(i => i.status === 'taken').length, missed = last7.filter(i => i.status === 'missed').length;
+  const adh = last7.length ? Math.round(taken / last7.length * 100) : null;
+  const onTime = last7.filter(i => i.status === 'taken' && i.takenAt && Math.abs(i.takenAt - atTime(startOfDay(i.takenAt), i.scheduled)) <= 30 * 60000).length;
+  let h = `<h2>Últimos 7 días</h2><div class="stats">
+    <div class="card stat"><div class="v">${adh == null ? '—' : adh + '%'}</div><div class="l">Cumplimiento</div></div>
+    <div class="card stat"><div class="v">${onTime}</div><div class="l">A la hora (±30 min)</div></div>
+    <div class="card stat"><div class="v" style="${missed ? 'color:var(--bad)' : ''}">${missed}</div><div class="l">Sin registrar</div></div></div>
+    <div class="row" style="margin-top:16px"><select class="in grow" id="hFilter"><option value="">Todos los medicamentos</option>${meds.map(m => `<option value="${m.id}" ${m.id === histFilter ? 'selected' : ''}>${esc(m.name)}</option>`).join('')}</select>
+    <button class="btn ghost" id="hCsv">CSV</button></div>`;
+  let any = false;
+  for (const r of rows) {
+    if (!r.items.length) continue; any = true;
+    const tk = r.items.filter(i => i.status === 'taken').length, tot = r.items.filter(i => i.status !== 'extra').length;
+    h += `<div class="hday"><div class="h"><span>${esc(dayLabel(r.day))}</span><span class="small muted" style="font-weight:600">${tk}/${tot}</span></div><div class="card">`;
+    for (const i of r.items) {
+      const tag = i.status === 'taken' ? `<span class="tag ok">✓ ${hm(i.takenAt)}</span>` : i.status === 'skipped' ? '<span class="tag skip">Omitida</span>' : i.status === 'extra' ? `<span class="tag ok">Extra ${hm(i.takenAt)}</span>` : '<span class="tag late">Sin registro</span>';
+      h += `<div class="hitem"><span style="width:48px;font-weight:700;font-variant-numeric:tabular-nums" class="${i.scheduled ? '' : 'muted'}">${i.scheduled || '—'}</span>
+        <span class="dot" style="background:${esc(i.med.color)}"></span><div class="grow">${esc(i.med.name)}${i.med.dose ? ' <span class="muted">' + esc(i.med.dose) + '</span>' : ''}</div>${tag}</div>`;
+    }
+    h += `</div></div>`;
+  }
+  if (!any) h += `<div class="card pad muted" style="margin-top:16px">Aún no hay tomas en el historial.</div>`;
+  $('#view').innerHTML = h;
+  $('#hFilter').onchange = e => { histFilter = e.target.value; renderHist(); };
+  $('#hCsv').onclick = exportCSV;
+}
+function dayLabel(d) {
+  const diff = dayDiff(d, new Date());
+  return diff === 0 ? 'Hoy' : diff === 1 ? 'Ayer' : fmtDayLong(d);
+}
+function exportCSV() {
+  const rows = histRows(365).reverse();
+  const lines = [['Fecha', 'Hora programada', 'Hora tomada', 'Medicamento', 'Concentración', 'Cantidad', 'Estado'].join(';')];
+  const st = { taken: 'Tomada', skipped: 'Omitida', missed: 'Sin registro', extra: 'Toma extra' };
+  for (const r of rows) for (const i of r.items)
+    lines.push([ymd(r.day), i.scheduled || '', i.takenAt ? ymd(i.takenAt) + ' ' + hm(i.takenAt) : '', i.med.name, i.med.dose || '', qty(i.med.perDose, i.med.unit), st[i.status]]
+      .map(v => `"${String(v).replace(/"/g, '""')}"`).join(';'));
+  saveFile(`historial_${slug(profile().name)}_${ymd(new Date())}.csv`, '\ufeff' + lines.join('\r\n'), 'text/csv');
+}
+const slug = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/gi, '_').toLowerCase();
+
+// ---------- Vista: AJUSTES ----------
+function renderAjustes() {
+  const perm = 'Notification' in window ? Notification.permission : 'unsupported';
+  const permTxt = { granted: '✓ Activados', denied: 'Bloqueados en el teléfono', default: 'Sin activar', unsupported: 'No disponibles en este navegador' }[perm];
+  let h = `<h2>Recordatorios</h2><div class="card">
+    <div class="set"><div class="t">Avisos de la app</div><div class="d">Estado: <b>${permTxt}</b>. Suenan a la hora de cada toma y de nuevo a los 15 minutos si no la registras.</div>
+      <div class="acts">${perm === 'default' ? '<button class="btn sm pri" id="aNotif">Activar avisos</button>' : ''}${perm === 'granted' ? '<button class="btn sm ghost" id="aTest">Probar aviso</button>' : ''}</div>
+      ${perm === 'denied' ? '<div class="d" style="margin-top:8px">Actívalos en Ajustes del teléfono › Notificaciones › Pastillero.</div>' : ''}
+      ${isIOS() && !isStandalone() ? '<div class="d" style="margin-top:8px">En iPhone los avisos solo funcionan si primero instalas la app en la pantalla de inicio (ver abajo).</div>' : ''}</div>
+    <div class="set"><div class="t">Alarmas en el calendario del teléfono <span class="tag ok" style="margin-left:4px">Recomendado</span></div>
+      <div class="d">Los teléfonos no dejan que una app web suene si está cerrada hace rato. Para no depender de eso, exporta tus horarios al calendario: el teléfono hará sonar la alarma siempre, aunque la app esté cerrada. Incluye también un aviso el día en que te quede stock para los días que definiste en cada medicamento (5 por defecto).</div>
+      <div class="acts"><button class="btn sm pri" id="aIcs">Agregar al calendario</button></div>
+      <div class="d" style="margin-top:6px">${S.calExported ? 'Última exportación: ' + esc(new Date(S.calExported).toLocaleString('es-CL')) + '. ' : ''}Si cambias horarios, borra el calendario anterior y vuelve a exportar.</div></div>
+    <label class="set switch" style="display:flex"><div><div class="t">Sonido con la app abierta</div><div class="d">Pitido corto además del aviso.</div></div><input type="checkbox" id="aSound" ${S.settings.sound ? 'checked' : ''}></label>
+  </div>
+
+  <h2>Personas en este teléfono</h2><div class="card pad">
+    <div class="d small muted" style="margin-bottom:6px">Útil si llevas también los medicamentos de un familiar. Cada persona tiene sus propios medicamentos e historial.</div>
+    ${S.profiles.map(p => `<div class="prof"><div class="av">${esc((p.name.trim()[0] || '?').toUpperCase())}</div><div class="grow"><b>${esc(p.name)}</b><div class="small muted">${S.meds.filter(m => m.profileId === p.id).length} medicamentos${p.id === S.active ? ' · activa' : ''}</div></div>
+      <button class="btn sm ghost" data-ren="${p.id}">Renombrar</button>${S.profiles.length > 1 ? `<button class="iconbtn" data-delp="${p.id}" aria-label="Eliminar">✕</button>` : ''}</div>`).join('')}
+    <button class="btn sm" id="aAddP" style="margin-top:12px">+ Agregar persona</button></div>
+
+  <h2>Respaldo</h2><div class="card">
+    <div class="set"><div class="t">Copia de seguridad</div><div class="d">Tus datos se guardan solo en este teléfono. Haz una copia de vez en cuando (por ejemplo, envíatela por correo) para no perderlos si cambias de teléfono.</div>
+      <div class="acts"><button class="btn sm" id="aExp">Exportar copia</button><button class="btn sm ghost" id="aImp">Importar copia</button><input type="file" id="aFile" accept=".json,application/json" hidden></div></div>
+  </div>
+
+  <h2>Instalar en el teléfono</h2><div class="card pad">
+    ${isStandalone() ? '<div>✓ La app ya está instalada.</div>' : `
+    ${deferredInstall ? '<button class="btn pri block" id="instBtn">Instalar Pastillero</button>' : ''}
+    <div class="t" style="font-weight:600;margin-top:${deferredInstall ? '14px' : '0'}">iPhone (Safari)</div>
+    <ol class="steps"><li>Toca el botón <b>Compartir</b> (cuadrado con flecha hacia arriba).</li><li>Elige <b>“Agregar a inicio”</b>.</li><li>Abre Pastillero desde el ícono y activa los avisos.</li></ol>
+    <div class="t" style="font-weight:600;margin-top:12px">Android (Chrome)</div>
+    <ol class="steps"><li>Toca el menú <b>⋮</b>.</li><li>Elige <b>“Instalar app”</b> o “Agregar a pantalla principal”.</li></ol>`}
+  </div>
+  <p class="small muted" style="text-align:center;margin:20px 8px">Pastillero · uso personal y familiar gratuito. Esta app no reemplaza las indicaciones de tu médico o químico farmacéutico.</p>`;
+  $('#view').innerHTML = h;
+  $('#aNotif') && ($('#aNotif').onclick = askNotifications);
+  $('#instBtn') && ($('#instBtn').onclick = doInstall);
+  $('#aTest') && ($('#aTest').onclick = () => { unlockAudio(); notify('Pastillero', 'Así se verán tus recordatorios 💊', 'test'); });
+  $('#aSound').onchange = e => { S.settings.sound = e.target.checked; save(); };
+  $('#aIcs').onclick = exportICS;
+  $('#aExp').onclick = () => saveFile(`pastillero_respaldo_${ymd(new Date())}.json`, JSON.stringify(S, null, 1), 'application/json');
+  $('#aImp').onclick = () => $('#aFile').click();
+  $('#aFile').onchange = importBackup;
+  $('#aAddP').onclick = () => profileNameSheet();
+  document.querySelectorAll('[data-ren]').forEach(b => b.onclick = () => profileNameSheet(b.dataset.ren));
+  document.querySelectorAll('[data-delp]').forEach(b => b.onclick = async () => {
+    const p = S.profiles.find(x => x.id === b.dataset.delp);
+    if (!await confirmBox('Eliminar persona', `¿Eliminar a <b>${esc(p.name)}</b> con todos sus medicamentos e historial?`, 'Eliminar', true)) return;
+    const ids = new Set(S.meds.filter(m => m.profileId === p.id).map(m => m.id));
+    S.meds = S.meds.filter(m => !ids.has(m.id)); S.logs = S.logs.filter(l => !ids.has(l.medId));
+    S.profiles = S.profiles.filter(x => x.id !== p.id); if (S.active === p.id) S.active = S.profiles[0].id;
+    save(); render();
+  });
+}
+function profileNameSheet(id) {
+  const p = id ? S.profiles.find(x => x.id === id) : null;
+  openSheet(p ? 'Renombrar' : 'Nueva persona', `<div class="field"><label class="l">Nombre</label><input class="in" id="pn" value="${esc(p ? p.name : '')}" placeholder="Ej: Mamá"></div><button class="btn pri block" id="pOk">Guardar</button>`, s => {
+    const inp = s.querySelector('#pn'); setTimeout(() => inp.focus(), 100);
+    s.querySelector('#pOk').onclick = () => {
+      const n = inp.value.trim(); if (!n) return toast('Escribe un nombre');
+      if (p) p.name = n; else { const np = { id: uid(), name: n }; S.profiles.push(np); S.active = np.id; }
+      save(); closeSheet(); render();
+    };
+  });
+}
+function profileSwitcher() {
+  openSheet('¿De quién son los medicamentos?', S.profiles.map(p => `<div class="prof" data-p="${p.id}" style="cursor:pointer"><div class="av">${esc((p.name.trim()[0] || '?').toUpperCase())}</div><div class="grow"><b>${esc(p.name)}</b></div>${p.id === S.active ? '<span class="tag ok">Activa</span>' : ''}</div>`).join('') +
+    `<button class="btn sm" id="psAdd" style="margin-top:14px">+ Agregar persona</button>`, s => {
+    s.querySelectorAll('[data-p]').forEach(r => r.onclick = () => { S.active = r.dataset.p; save(); closeSheet(); render(); });
+    s.querySelector('#psAdd').onclick = () => profileNameSheet();
+  });
+}
+async function importBackup(e) {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  try {
+    const data = JSON.parse(await f.text());
+    if (!Array.isArray(data.meds) || !Array.isArray(data.logs) || !Array.isArray(data.profiles)) throw new Error('formato');
+    if (!await confirmBox('Importar copia', `La copia tiene ${data.meds.length} medicamentos y ${data.logs.length} registros. <b>Reemplazará</b> todo lo que hay ahora en este teléfono.`, 'Reemplazar', true)) return;
+    S = data; save(); load(); toast('Copia importada'); render();
+  } catch (err) { toast('El archivo no es una copia válida de Pastillero'); }
+}
+
+// ---------- archivos ----------
+const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const isMobile = () => isIOS() || /android/i.test(navigator.userAgent);
+const isStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+async function saveFile(name, text, mime) {
+  const blob = new Blob([text], { type: mime });
+  try {
+    const file = new File([blob], name, { type: mime });
+    if (isMobile() && navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: name }); return; }
+  } catch (e) { if (e && e.name === 'AbortError') return; }
+  const url = URL.createObjectURL(blob), a = document.createElement('a');
+  a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+}
+
+// ---------- calendario (.ics) ----------
+function icsEsc(s) { return String(s).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n'); }
+function icsFold(line) {
+  const cps = Array.from(line); if (new TextEncoder().encode(line).length <= 74) return line;
+  const out = []; let cur = '', len = 0;
+  for (const c of cps) {
+    const b = new TextEncoder().encode(c).length;
+    if (len + b > (out.length ? 73 : 74)) { out.push(cur); cur = ''; len = 0; }
+    cur += c; len += b;
+  }
+  out.push(cur); return out.join('\r\n ');
+}
+function buildICS(meds) {
+  const fmt = d => `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
+  const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+  const L = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Pastillero//ES', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'X-WR-CALNAME:Pastillero'];
+  const today = startOfDay(new Date()), now = Date.now();
+  const BY = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
+  for (const m of meds) {
+    if (!m.active) continue;
+    const s = m.schedule;
+    let start = m.startDate && parseYmd(m.startDate) > today ? parseYmd(m.startDate) : today;
+    const until = m.endDate ? `;UNTIL=${m.endDate.replace(/-/g, '')}T235959` : '';
+    const summary = `💊 ${m.name}${m.dose ? ' ' + m.dose : ''} · ${qty(m.perDose, m.unit)}`;
+    const ev = (dt, rrule, sfx) => {
+      L.push('BEGIN:VEVENT', `UID:${m.id}-${sfx}@pastillero`, `DTSTAMP:${stamp}`, `DTSTART:${fmt(dt)}`, `DTEND:${fmt(new Date(dt.getTime() + 10 * 60000))}`,
+        rrule ? `RRULE:${rrule}${until}` : '', `SUMMARY:${icsEsc(summary)}`, m.notes ? `DESCRIPTION:${icsEsc(m.notes)}` : '',
+        'BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:${icsEsc('Tomar ' + m.name)}`, 'TRIGGER:PT0S', 'END:VALARM', 'END:VEVENT');
+    };
+    if (s.type === 'daily' || (s.type === 'hours' && 24 % s.everyHours === 0)) {
+      const times = s.type === 'daily' ? s.times : scheduleTimes({ ...m, startDate: '' }, today);
+      times.forEach(t => ev(atTime(start, t), 'FREQ=DAILY', t.replace(':', '')));
+    } else if (s.type === 'weekly') {
+      let d = new Date(start); for (let i = 0; i < 7 && !s.weekdays.includes(d.getDay()); i++) d = addDays(d, 1);
+      s.times.forEach(t => ev(atTime(d, t), `FREQ=WEEKLY;BYDAY=${s.weekdays.map(x => BY[x]).join(',')}`, t.replace(':', '')));
+    } else if (s.type === 'ndays') {
+      let d = new Date(start);
+      for (let i = 0; i < s.everyDays && dayDiff(parseYmd(m.startDate || ymd(start)), d) % s.everyDays !== 0; i++) d = addDays(d, 1);
+      s.times.forEach(t => ev(atTime(d, t), `FREQ=DAILY;INTERVAL=${s.everyDays}`, t.replace(':', '')));
+    } else if (s.type === 'hours') {
+      let first = null;
+      for (let i = 0; i < 4 && !first; i++) first = dosesForDay(m, addDays(start, i)).find(x => x.time.getTime() >= now) || null;
+      if (first) ev(first.time, `FREQ=HOURLY;INTERVAL=${s.everyHours}`, 'h');
+    }
+    // aviso de reposición de stock
+    const st = stockStatus(m);
+    if (st.r && st.r.date) {
+      const ad = Number(m.alertDays ?? 5);
+      let when = atTime(startOfDay(new Date(st.r.date.getTime() - ad * 86400000)), '10:00');
+      if (when.getTime() > now) {
+        L.push('BEGIN:VEVENT', `UID:${m.id}-stock-${ymd(when)}@pastillero`, `DTSTAMP:${stamp}`, `DTSTART:${fmt(when)}`, `DTEND:${fmt(new Date(when.getTime() + 15 * 60000))}`,
+          `SUMMARY:${icsEsc(`🛒 Comprar ${m.name} — queda stock para ${ad} días`)}`, `DESCRIPTION:${icsEsc(`Se acaba aprox. el ${fmtDayLong(st.r.date)}. Al reponer, actualiza el stock en Pastillero.`)}`,
+          'BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:${icsEsc('Comprar ' + m.name)}`, 'TRIGGER:PT0S', 'END:VALARM', 'END:VEVENT');
+      }
+    }
+  }
+  L.push('END:VCALENDAR');
+  return L.filter(Boolean).map(icsFold).join('\r\n') + '\r\n';
+}
+function exportICS() {
+  const meds = myMeds().filter(m => m.active);
+  if (!meds.length) return toast('No hay medicamentos activos');
+  S.calExported = new Date().toISOString(); save();
+  saveFile(`pastillero_${slug(profile().name)}.ics`, buildICS(meds), 'text/calendar');
+  renderAjustes();
+}
+
+// ---------- notificaciones ----------
+let audioCtx = null;
+function unlockAudio() { try { audioCtx ||= new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); } catch (e) { } }
+function beep() {
+  if (!S.settings.sound || !audioCtx) return;
+  try {
+    [0, .28].forEach(off => {
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain(); o.frequency.value = 880; o.type = 'sine';
+      g.gain.setValueAtTime(.0001, audioCtx.currentTime + off); g.gain.exponentialRampToValueAtTime(.3, audioCtx.currentTime + off + .02);
+      g.gain.exponentialRampToValueAtTime(.0001, audioCtx.currentTime + off + .22);
+      o.connect(g).connect(audioCtx.destination); o.start(audioCtx.currentTime + off); o.stop(audioCtx.currentTime + off + .25);
+    });
+  } catch (e) { }
+}
+async function askNotifications() {
+  unlockAudio();
+  if (!('Notification' in window)) {
+    return toast(isIOS() && !isStandalone() ? 'Primero instala la app en la pantalla de inicio' : 'Este navegador no permite avisos');
+  }
+  const r = await Notification.requestPermission();
+  toast(r === 'granted' ? 'Avisos activados ✓' : 'No se activaron los avisos');
+  render();
+}
+async function notify(title, body, tag, data) {
+  if (document.visibilityState === 'visible') { toast(`${title}: ${body}`); beep(); try { navigator.vibrate && navigator.vibrate([200, 100, 200]); } catch (e) { } }
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  const opts = { body, tag, data: data || {}, icon: 'icon-192.png', badge: 'icon-192.png', renotify: true, vibrate: [200, 100, 200], requireInteraction: !!(data && data.key) };
+  try {
+    const reg = 'serviceWorker' in navigator ? await navigator.serviceWorker.getRegistration() : null;
+    if (reg) { if (data && data.key) opts.actions = [{ action: 'take', title: '✓ Ya la tomé' }]; await reg.showNotification(title, opts); }
+    else new Notification(title, opts);
+  } catch (e) { try { new Notification(title, { body, tag }); } catch (_) { } }
+}
+function tick() {
+  const now = Date.now(), today = startOfDay(new Date()), lm = logMap();
+  let changed = false;
+  const multi = S.profiles.length > 1;
+  for (const m of S.meds) {
+    const who = multi ? ` (${(S.profiles.find(p => p.id === m.profileId) || {}).name})` : '';
+    for (const d of dosesForDay(m, today)) {
+      if (lm.has(d.key)) continue;
+      const late = now - d.time.getTime();
+      if (late < 0 || late > 3 * 3600000) continue;
+      const n = S.notified[d.key] || 0;
+      if (n === 0) { notify(`💊 ${m.name}${who}`, `${qty(m.perDose, m.unit)}${m.dose ? ' de ' + m.dose : ''} · ${d.t}${m.notes ? ' · ' + m.notes : ''}`, d.key, { key: d.key }); S.notified[d.key] = 1; changed = true; }
+      else if (n === 1 && late >= 15 * 60000) { notify(`⏰ Recordatorio: ${m.name}${who}`, `Aún no registras la toma de las ${d.t}`, d.key, { key: d.key }); S.notified[d.key] = 2; changed = true; }
+    }
+    const st = stockStatus(m);
+    if ((st.level === 'warn' || st.level === 'bad') && S.notified['stock|' + m.id] !== ymd(today)) {
+      notify(`🛒 Stock bajo: ${m.name}${who}`, `${st.text}. Quedan ${qty(m.stock, m.unit)}.`, 'stock-' + m.id);
+      S.notified['stock|' + m.id] = ymd(today); changed = true;
+    }
+  }
+  if (changed) save();
+}
+
+// ---------- instalación ----------
+let deferredInstall = null;
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredInstall = e; if (view === 'hoy' || view === 'ajustes') render(); });
+async function doInstall() { if (!deferredInstall) return; deferredInstall.prompt(); await deferredInstall.userChoice; deferredInstall = null; render(); }
+function installHint() {
+  if (isStandalone()) return '';
+  if (deferredInstall) return `<div class="alert info" style="margin-top:16px"><div class="grow"><b>Instala Pastillero</b><br>Ábrela como app y recibe avisos.</div><button class="btn sm pri" id="instBtn">Instalar</button></div>`;
+  if (isIOS()) return `<div class="alert info" style="margin-top:16px"><div class="grow"><b>Instálala en tu iPhone:</b> toca <b>Compartir</b> (cuadrado con flecha) y luego “Agregar a inicio”. Así funcionan los avisos.</div></div>`;
+  return '';
+}
+function pillSvg() { return `<svg viewBox="0 0 64 64" aria-hidden="true"><g transform="rotate(-40 32 32)"><rect x="8" y="21" width="48" height="22" rx="11" fill="var(--pri-soft)" stroke="var(--pri)" stroke-width="2.5"/><path d="M32 21h13a11 11 0 0 1 0 22H32z" fill="var(--pri)"/></g></svg>`; }
+
+// ---------- arranque ----------
+load();
+$('#tabs').addEventListener('click', e => { const b = e.target.closest('button[data-v]'); if (b) setView(b.dataset.v); });
+$('#fab').onclick = () => medForm();
+$('#profileChip').onclick = profileSwitcher;
+window.addEventListener('scroll', () => $('#top').classList.toggle('scrolled', scrollY > 4), { passive: true });
+document.addEventListener('pointerdown', unlockAudio, { once: true });
+
+function handleAction(type, key) {
+  if (!key) return;
+  const m = medById(key.split('|')[0]); if (!m) return;
+  if (m.profileId !== S.active) S.active = m.profileId;
+  if (type === 'take') { takeDose(key, new Date()); toast('Toma registrada ✓'); setView('hoy'); }
+  else { setView('hoy'); doseSheet(key); }
+}
+const qp = new URLSearchParams(location.search);
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => { });
+  navigator.serviceWorker.addEventListener('message', e => { if (e.data && e.data.type) handleAction(e.data.type, e.data.key); });
+}
+try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) { }
+render();
+if (qp.get('take') || qp.get('open')) { handleAction(qp.get('take') ? 'take' : 'open', qp.get('take') || qp.get('open')); history.replaceState(null, '', location.pathname); }
+
+tick();
+setInterval(() => { tick(); if (view === 'hoy' && !sheet.open) renderHoy(); }, 30000);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { load(); logIdx = null; tick(); if (!sheet.open) render(); } });
+</script>
+</body>
+</html>
