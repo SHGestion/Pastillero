@@ -392,6 +392,7 @@ function stockStatus(m) {
 
 // ---------- registro de tomas ----------
 function takeDose(key, when) {
+  stopSound();
   const [medId] = key.split('|'); const m = medById(medId); if (!m) return;
   if (logMap().has(key)) return;
   const units = Math.min(Number(m.perDose) || 0, Math.max(0, Number(m.stock) || 0));
@@ -834,7 +835,13 @@ function renderAjustes() {
       <div class="d">Los teléfonos no dejan que una app web suene si está cerrada hace rato. Para no depender de eso, exporta tus horarios al calendario: el teléfono hará sonar la alarma siempre, aunque la app esté cerrada. También agrega tus citas pendientes con sus avisos. Incluye un aviso el día en que te quede stock para los días que definiste en cada medicamento (5 por defecto).</div>
       <div class="acts"><button class="btn sm pri" id="aIcs">Agregar al calendario</button></div>
       <div class="d" style="margin-top:6px">${S.calExported ? 'Última exportación: ' + esc(new Date(S.calExported).toLocaleString('es-CL')) + '. ' : ''}Si cambias horarios, borra el calendario anterior y vuelve a exportar.</div></div>
-    <label class="set switch" style="display:flex"><div><div class="t">Sonido con la app abierta</div><div class="d">Pitido corto además del aviso.</div></div><input type="checkbox" id="aSound" ${S.settings.sound ? 'checked' : ''}></label>
+    <div class="set"><div class="t">Sonido del recordatorio</div>
+      <div class="d">Suena cuando la app está abierta o en uso. El sonido del aviso con la app cerrada lo elige el teléfono (ver abajo).</div>
+      <div class="row" style="margin-top:10px"><select class="in grow" id="aSnd">${Object.entries(SOUNDS).map(([k, v]) => `<option value="${k}" ${k === (S.settings.soundName || 'personal') ? 'selected' : ''}>${v.l}</option>`).join('')}</select><button class="btn" id="aSndTest">▶ Probar</button><button class="btn ghost" id="aSndStop" aria-label="Detener">■</button></div>
+      <details style="margin-top:10px"><summary class="small" style="color:var(--pri);cursor:pointer;font-weight:600">Cambiar el sonido de los avisos con la app cerrada</summary>
+        <div class="d" style="margin-top:6px"><b>Android:</b> Ajustes del teléfono › Aplicaciones › Pastillero › Notificaciones › toca la categoría de avisos › Sonido, y elige tu audio desde los archivos del teléfono (guárdalo antes en el teléfono). Los nombres varían un poco según la marca.<br>
+        <b>iPhone:</b> iOS no permite elegir sonido para apps web; usa el de las notificaciones del sistema.<br>
+        <b>Alarmas del calendario:</b> se cambian en los ajustes de notificaciones de la app Calendario.</div></details></div>
   </div>
 
   <h2>Lectura de órdenes médicas</h2><div class="card"><div class="set"><div class="t">Servicio de lectura con IA</div>
@@ -865,7 +872,9 @@ function renderAjustes() {
   $('#aNotif') && ($('#aNotif').onclick = askNotifications);
   $('#instBtn') && ($('#instBtn').onclick = doInstall);
   $('#aTest') && ($('#aTest').onclick = () => { unlockAudio(); notify('Pastillero', 'Así se verán tus recordatorios 💊', 'test'); });
-  $('#aSound').onchange = e => { S.settings.sound = e.target.checked; save(); };
+  $('#aSnd').onchange = e => { S.settings.soundName = e.target.value; S.settings.sound = e.target.value !== 'none'; save(); playSound(e.target.value); };
+  $('#aSndTest').onclick = () => playSound($('#aSnd').value);
+  $('#aSndStop').onclick = stopSound;
   $('#aAi').onchange = e => { const v = e.target.value.trim(); S.settings.aiUrl = v && v !== DEFAULT_AI ? v : ''; save(); toast('Guardado'); };
   $('#aIcs').onclick = exportICS;
   $('#aExp').onclick = async () => { let f = {}; try { f = await files.all(); } catch (e) { } saveFile(`pastillero_respaldo_${ymd(new Date())}.json`, JSON.stringify({ ...S, files: f }), 'application/json'); };
@@ -999,17 +1008,48 @@ function exportICS() {
 // ---------- notificaciones ----------
 let audioCtx = null;
 function unlockAudio() { try { audioCtx ||= new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); } catch (e) { } }
-function beep() {
-  if (!S.settings.sound || !audioCtx) return;
+// Sonidos de recordatorio (generados en el teléfono, sin archivos)
+const SOUNDS = {
+  personal: { l: 'Mi audio personalizado', file: 'recordatorio.mp3', notes: [] },
+  campana: { l: 'Campanita', notes: [[1318.5, 0, 1.2], [1046.5, .35, 1.4]], wave: 'bell' },
+  marimba: { l: 'Marimba', notes: [[523.3, 0, .5], [659.3, .16, .5], [784, .32, .5], [1046.5, .48, .9]], wave: 'triangle' },
+  dingdong: { l: 'Ding-dong', notes: [[784, 0, 1], [622.3, .45, 1.3]], wave: 'bell' },
+  melodia: { l: 'Melodía suave', notes: [[587.3, 0, .6], [740, .25, .6], [880, .5, .6], [740, .75, .5], [1174.7, 1.0, 1.2]], wave: 'sine' },
+  alarma: { l: 'Alarma (insistente)', notes: [0, .5, 1, 1.5].flatMap(t => [[1046.5, t, .18], [1318.5, t + .2, .18]]), wave: 'square' },
+  none: { l: 'Sin sonido', notes: [] }
+};
+let curSrc = null, fileBufs = {};
+function stopSound() { try { curSrc && curSrc.stop(); } catch (e) { } curSrc = null; }
+async function playFile(url) {
+  unlockAudio(); if (!audioCtx) return;
   try {
-    [0, .28].forEach(off => {
-      const o = audioCtx.createOscillator(), g = audioCtx.createGain(); o.frequency.value = 880; o.type = 'sine';
-      g.gain.setValueAtTime(.0001, audioCtx.currentTime + off); g.gain.exponentialRampToValueAtTime(.3, audioCtx.currentTime + off + .02);
-      g.gain.exponentialRampToValueAtTime(.0001, audioCtx.currentTime + off + .22);
-      o.connect(g).connect(audioCtx.destination); o.start(audioCtx.currentTime + off); o.stop(audioCtx.currentTime + off + .25);
-    });
+    if (!fileBufs[url]) { const ab = await (await fetch(url)).arrayBuffer(); fileBufs[url] = await new Promise((res, rej) => audioCtx.decodeAudioData(ab, res, rej)); }
+    stopSound(); const src = audioCtx.createBufferSource(); src.buffer = fileBufs[url]; src.connect(audioCtx.destination);
+    src.onended = () => { if (curSrc === src) curSrc = null; }; src.start(); curSrc = src;
   } catch (e) { }
 }
+function playSound(name, times = 1) {
+  const snd = SOUNDS[name || S.settings.soundName || 'personal'] || SOUNDS.personal;
+  if (snd.file) return playFile(snd.file);
+  if (!snd.notes.length) return;
+  unlockAudio(); if (!audioCtx) return;
+  try {
+    const t0 = audioCtx.currentTime + .05, len = Math.max(...snd.notes.map(n => n[1] + n[2])) + .4;
+    const master = audioCtx.createGain(); master.gain.value = snd.wave === 'square' ? .12 : .35; master.connect(audioCtx.destination);
+    for (let r = 0; r < times; r++) for (const [f, off, dur] of snd.notes) {
+      const st = t0 + r * len + off;
+      const partials = snd.wave === 'bell' ? [[1, 1], [2.76, .35], [5.4, .12]] : [[1, 1]];
+      for (const [mul, amp] of partials) {
+        const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+        o.type = snd.wave === 'bell' ? 'sine' : snd.wave; o.frequency.value = f * mul;
+        g.gain.setValueAtTime(.0001, st); g.gain.exponentialRampToValueAtTime(amp, st + .015);
+        g.gain.exponentialRampToValueAtTime(.0001, st + dur * (mul > 1 ? .5 : 1));
+        o.connect(g).connect(master); o.start(st); o.stop(st + dur + .05);
+      }
+    }
+  } catch (e) { }
+}
+function beep() { if (S.settings.sound === false) return; playSound(null, (S.settings.soundName || 'personal') === 'alarma' || !S.settings.soundName || S.settings.soundName === 'personal' ? 1 : 2); }
 async function askNotifications() {
   unlockAudio();
   if (!('Notification' in window)) {
