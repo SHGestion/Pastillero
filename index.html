@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Pastillero</title>
-<meta name="description" content="Recordatorio de medicamentos, registro de tomas y control de stock.">
+<meta name="description" content="Recordatorio de medicamentos, control de stock y agenda de citas y exámenes médicos.">
 <meta name="theme-color" content="#0f766e">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -114,7 +114,7 @@ h2{font-size:15px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute
 .stockline{display:flex;justify-content:space-between;gap:8px;font-size:15px;flex-wrap:wrap}
 .med .acts{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
 .med.off{opacity:.55}
-body.v-meds main{padding-bottom:90px}
+body.v-meds main,body.v-citas main{padding-bottom:90px}
 .empty{text-align:center;padding:36px 20px}
 .empty svg{width:72px;height:72px;opacity:.9}
 .empty .t{font-weight:700;font-size:19px;margin:10px 0 4px}
@@ -140,7 +140,7 @@ body.v-meds main{padding-bottom:90px}
 nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--card);border-top:1px solid var(--line);
   display:flex;justify-content:space-around;padding:6px 6px calc(6px + env(safe-area-inset-bottom))}
 nav.tabs button{flex:1;border:0;background:transparent;display:flex;flex-direction:column;align-items:center;gap:2px;
-  padding:6px 0;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;border-radius:12px;max-width:120px}
+  padding:6px 0;font-size:11px;font-weight:600;color:var(--muted);cursor:pointer;border-radius:12px;max-width:120px;min-width:0}
 nav.tabs button svg{width:26px;height:26px}
 nav.tabs button.on{color:var(--pri)}
 .fab{position:fixed;right:18px;bottom:calc(86px + env(safe-area-inset-bottom));z-index:6;border:0;border-radius:18px;
@@ -189,6 +189,26 @@ dialog.sheet::backdrop{background:rgba(0,0,0,.4)}
   background:#1c1f23;color:#fff;padding:12px 18px;border-radius:14px;font-size:15px;opacity:0;transition:.25s;z-index:50;
   max-width:90vw;text-align:center;pointer-events:none}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.appt{display:flex;gap:14px;padding:14px;border-bottom:1px solid var(--line);cursor:pointer;align-items:flex-start}
+.appt:last-child{border-bottom:0}
+.appt .cal{width:56px;flex:none;text-align:center;border-radius:12px;background:var(--pri-soft);color:var(--pri);padding:6px 0}
+.appt .cal .m{font-size:12px;font-weight:700;text-transform:uppercase}
+.appt .cal .d{font-size:24px;font-weight:800;line-height:1.1}
+.appt .cal .w{font-size:12px}
+.appt .cal.nd{background:var(--warn-soft);color:var(--warn)}
+.appt .nm{font-weight:700;line-height:1.25}
+.appt .sub{font-size:14px;color:var(--muted)}
+.seg3{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--line);padding:4px;border-radius:14px}
+.seg3 button{border:0;background:transparent;border-radius:10px;min-height:42px;font-weight:600;font-size:14px;cursor:pointer;color:var(--muted);padding:4px}
+.seg3 button.on{background:var(--card);color:var(--ink);box-shadow:var(--shadow)}
+.thumbs{display:flex;gap:10px;flex-wrap:wrap}
+.thumb{width:84px;height:84px;border-radius:12px;border:1px solid var(--line);background:var(--bg) center/cover no-repeat;display:grid;place-items:center;font-size:30px;cursor:pointer;overflow:hidden}
+.kv{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
+.kv .k{width:26px;flex:none;text-align:center}
+.spin{width:40px;height:40px;border:4px solid var(--pri-soft);border-top-color:var(--pri);border-radius:50%;animation:sp 1s linear infinite;margin:18px auto 6px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.rev{border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
+textarea.in{min-height:80px;resize:vertical}
 .steps{margin:6px 0 0;padding-left:20px;font-size:15px}
 .steps li{margin:4px 0}
 select.in{appearance:auto}
@@ -213,6 +233,7 @@ select.in{appearance:auto}
 <nav class="tabs" id="tabs">
   <button data-v="hoy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Hoy</button>
   <button data-v="meds"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="8" rx="4" transform="rotate(-35 12 12)"/><path d="M9.6 8.6l4.8 6.8"/></svg>Medicamentos</button>
+  <button data-v="citas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4M12 13v5M9.5 15.5h5"/></svg>Citas</button>
   <button data-v="hist"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16M4 12h16M4 19h10"/></svg>Historial</button>
   <button data-v="ajustes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Ajustes</button>
 </nav>
@@ -262,14 +283,14 @@ function defaultState() {
 function load() {
   try { const r = localStorage.getItem(KEY); S = r ? JSON.parse(r) : defaultState(); }
   catch (e) { S = defaultState(); }
-  S.profiles ||= []; S.meds ||= []; S.logs ||= []; S.settings ||= { sound: true }; S.notified ||= {};
+  S.profiles ||= []; S.meds ||= []; S.logs ||= []; S.settings ||= { sound: true }; S.notified ||= {}; S.appts ||= [];
   if (!S.profiles.length) S.profiles.push({ id: uid(), name: 'Yo' });
   if (!S.profiles.find(p => p.id === S.active)) S.active = S.profiles[0].id;
   // limpiar marcas de notificación antiguas (> 3 días)
   const lim = ymd(addDays(new Date(), -3));
   for (const k of Object.keys(S.notified)) {
     const v = S.notified[k];
-    const d = k.startsWith('stock|') ? v : k.split('|')[1];
+    const d = (k.startsWith('stock|') || k.startsWith('appt|')) ? v : k.split('|')[1];
     if (!d || d < lim) delete S.notified[k];
   }
 }
@@ -401,8 +422,8 @@ function render() {
   const p = profile();
   $('#profileName').textContent = p.name; $('#profileAv').textContent = (p.name.trim()[0] || '?').toUpperCase();
   document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.v === view));
-  $('#fab').hidden = view !== 'meds'; document.body.className = 'v-' + view;
-  ({ hoy: renderHoy, meds: renderMeds, hist: renderHist, ajustes: renderAjustes })[view]();
+  $('#fab').hidden = view !== 'meds' && view !== 'citas'; document.body.className = 'v-' + view;
+  ({ hoy: renderHoy, meds: renderMeds, citas: renderCitas, hist: renderHist, ajustes: renderAjustes })[view]();
 }
 
 const sheet = $('#sheet');
@@ -468,7 +489,7 @@ function renderHoy() {
     h += `<div class="card empty" style="margin-top:12px">${pillSvg()}<div class="t">Aún no hay medicamentos</div>
       <p class="muted" style="margin:0 0 16px">Agrega cada medicamento con su horario y stock. La app te avisará cuándo tomarlo y cuándo comprar más.</p>
       <button class="btn pri" id="addFirst">Agregar medicamento</button></div>`;
-    $('#view').innerHTML = h + installHint(); bindHoy(); return;
+    $('#view').innerHTML = h + hoyCitasHtml() + installHint(); bindHoy(); return;
   }
 
   if (isToday) {
@@ -508,7 +529,7 @@ function renderHoy() {
     }
     h += `</div>`;
   }
-  $('#view').innerHTML = h + (isToday ? installHint() : '');
+  $('#view').innerHTML = h + (isToday ? hoyCitasHtml() + installHint() : '');
   bindHoy();
 }
 function bindHoy() {
@@ -518,6 +539,8 @@ function bindHoy() {
   $('#addFirst') && ($('#addFirst').onclick = () => medForm());
   $('#askNotif') && ($('#askNotif').onclick = askNotifications);
   $('#instBtn') && ($('#instBtn').onclick = doInstall);
+  document.querySelectorAll('[data-appt]').forEach(r => r.onclick = () => apptSheet(r.dataset.appt));
+  document.querySelectorAll('[data-goporag]').forEach(r => r.onclick = () => { citasTab = 'porag'; setView('citas'); });
   document.querySelectorAll('[data-refill]').forEach(b => b.onclick = e => { e.stopPropagation(); refillSheet(b.dataset.refill); });
   document.querySelectorAll('[data-take]').forEach(b => b.onclick = e => {
     e.stopPropagation(); unlockAudio(); const key = b.dataset.take;
@@ -795,14 +818,18 @@ function renderAjustes() {
       ${perm === 'denied' ? '<div class="d" style="margin-top:8px">Actívalos en Ajustes del teléfono › Notificaciones › Pastillero.</div>' : ''}
       ${isIOS() && !isStandalone() ? '<div class="d" style="margin-top:8px">En iPhone los avisos solo funcionan si primero instalas la app en la pantalla de inicio (ver abajo).</div>' : ''}</div>
     <div class="set"><div class="t">Alarmas en el calendario del teléfono <span class="tag ok" style="margin-left:4px">Recomendado</span></div>
-      <div class="d">Los teléfonos no dejan que una app web suene si está cerrada hace rato. Para no depender de eso, exporta tus horarios al calendario: el teléfono hará sonar la alarma siempre, aunque la app esté cerrada. Incluye también un aviso el día en que te quede stock para los días que definiste en cada medicamento (5 por defecto).</div>
+      <div class="d">Los teléfonos no dejan que una app web suene si está cerrada hace rato. Para no depender de eso, exporta tus horarios al calendario: el teléfono hará sonar la alarma siempre, aunque la app esté cerrada. También agrega tus citas pendientes con sus avisos. Incluye un aviso el día en que te quede stock para los días que definiste en cada medicamento (5 por defecto).</div>
       <div class="acts"><button class="btn sm pri" id="aIcs">Agregar al calendario</button></div>
       <div class="d" style="margin-top:6px">${S.calExported ? 'Última exportación: ' + esc(new Date(S.calExported).toLocaleString('es-CL')) + '. ' : ''}Si cambias horarios, borra el calendario anterior y vuelve a exportar.</div></div>
     <label class="set switch" style="display:flex"><div><div class="t">Sonido con la app abierta</div><div class="d">Pitido corto además del aviso.</div></div><input type="checkbox" id="aSound" ${S.settings.sound ? 'checked' : ''}></label>
   </div>
 
+  <h2>Lectura de órdenes médicas</h2><div class="card"><div class="set"><div class="t">Servicio de lectura con IA</div>
+    <div class="d">Dirección del servicio que lee las fotos de órdenes y capturas. Déjala como está salvo que te indiquen otra.</div>
+    <input class="in" id="aAi" style="margin-top:10px;font-size:14px" value="${esc(S.settings.aiUrl || DEFAULT_AI)}"></div></div>
+
   <h2>Personas en este teléfono</h2><div class="card pad">
-    <div class="d small muted" style="margin-bottom:6px">Útil si llevas también los medicamentos de un familiar. Cada persona tiene sus propios medicamentos e historial.</div>
+    <div class="d small muted" style="margin-bottom:6px">Útil si llevas también los medicamentos de un familiar. Cada persona tiene sus propios medicamentos, citas e historial.</div>
     ${S.profiles.map(p => `<div class="prof"><div class="av">${esc((p.name.trim()[0] || '?').toUpperCase())}</div><div class="grow"><b>${esc(p.name)}</b><div class="small muted">${S.meds.filter(m => m.profileId === p.id).length} medicamentos${p.id === S.active ? ' · activa' : ''}</div></div>
       <button class="btn sm ghost" data-ren="${p.id}">Renombrar</button>${S.profiles.length > 1 ? `<button class="iconbtn" data-delp="${p.id}" aria-label="Eliminar">✕</button>` : ''}</div>`).join('')}
     <button class="btn sm" id="aAddP" style="margin-top:12px">+ Agregar persona</button></div>
@@ -826,17 +853,19 @@ function renderAjustes() {
   $('#instBtn') && ($('#instBtn').onclick = doInstall);
   $('#aTest') && ($('#aTest').onclick = () => { unlockAudio(); notify('Pastillero', 'Así se verán tus recordatorios 💊', 'test'); });
   $('#aSound').onchange = e => { S.settings.sound = e.target.checked; save(); };
+  $('#aAi').onchange = e => { const v = e.target.value.trim(); S.settings.aiUrl = v && v !== DEFAULT_AI ? v : ''; save(); toast('Guardado'); };
   $('#aIcs').onclick = exportICS;
-  $('#aExp').onclick = () => saveFile(`pastillero_respaldo_${ymd(new Date())}.json`, JSON.stringify(S, null, 1), 'application/json');
+  $('#aExp').onclick = async () => { let f = {}; try { f = await files.all(); } catch (e) { } saveFile(`pastillero_respaldo_${ymd(new Date())}.json`, JSON.stringify({ ...S, files: f }), 'application/json'); };
   $('#aImp').onclick = () => $('#aFile').click();
   $('#aFile').onchange = importBackup;
   $('#aAddP').onclick = () => profileNameSheet();
   document.querySelectorAll('[data-ren]').forEach(b => b.onclick = () => profileNameSheet(b.dataset.ren));
   document.querySelectorAll('[data-delp]').forEach(b => b.onclick = async () => {
     const p = S.profiles.find(x => x.id === b.dataset.delp);
-    if (!await confirmBox('Eliminar persona', `¿Eliminar a <b>${esc(p.name)}</b> con todos sus medicamentos e historial?`, 'Eliminar', true)) return;
+    if (!await confirmBox('Eliminar persona', `¿Eliminar a <b>${esc(p.name)}</b> con todos sus medicamentos, citas e historial?`, 'Eliminar', true)) return;
     const ids = new Set(S.meds.filter(m => m.profileId === p.id).map(m => m.id));
     S.meds = S.meds.filter(m => !ids.has(m.id)); S.logs = S.logs.filter(l => !ids.has(l.medId));
+    S.appts = S.appts.filter(a => a.profileId !== p.id);
     S.profiles = S.profiles.filter(x => x.id !== p.id); if (S.active === p.id) S.active = S.profiles[0].id;
     save(); render();
   });
@@ -864,7 +893,9 @@ async function importBackup(e) {
   try {
     const data = JSON.parse(await f.text());
     if (!Array.isArray(data.meds) || !Array.isArray(data.logs) || !Array.isArray(data.profiles)) throw new Error('formato');
-    if (!await confirmBox('Importar copia', `La copia tiene ${data.meds.length} medicamentos y ${data.logs.length} registros. <b>Reemplazará</b> todo lo que hay ahora en este teléfono.`, 'Reemplazar', true)) return;
+    if (!await confirmBox('Importar copia', `La copia tiene ${data.meds.length} medicamentos, ${(data.appts || []).length} citas y ${data.logs.length} registros de tomas. <b>Reemplazará</b> todo lo que hay ahora en este teléfono.`, 'Reemplazar', true)) return;
+    const fl = data.files || {}; delete data.files;
+    for (const [k, v] of Object.entries(fl)) { try { await files.put(k, v); } catch (e) { } }
     S = data; save(); load(); toast('Copia importada'); render();
   } catch (err) { toast('El archivo no es una copia válida de Pastillero'); }
 }
@@ -940,12 +971,13 @@ function buildICS(meds) {
       }
     }
   }
+  icsAppts(L, stamp, fmt);
   L.push('END:VCALENDAR');
   return L.filter(Boolean).map(icsFold).join('\r\n') + '\r\n';
 }
 function exportICS() {
   const meds = myMeds().filter(m => m.active);
-  if (!meds.length) return toast('No hay medicamentos activos');
+  if (!meds.length && !myAppts().some(a => a.status === 'pendiente')) return toast('No hay medicamentos ni citas para exportar');
   S.calExported = new Date().toISOString(); save();
   saveFile(`pastillero_${slug(profile().name)}.ics`, buildICS(meds), 'text/calendar');
   renderAjustes();
@@ -1004,7 +1036,410 @@ function tick() {
       S.notified['stock|' + m.id] = ymd(today); changed = true;
     }
   }
+  if (tickAppts(now, today)) changed = true;
   if (changed) save();
+}
+
+// ---------- CITAS, EXÁMENES Y ÓRDENES ----------
+const ATYPES = { consulta: { l: 'Consulta', i: '🩺' }, examen: { l: 'Examen', i: '🧪' }, procedimiento: { l: 'Procedimiento', i: '🏥' }, control: { l: 'Control', i: '📋' }, vacuna: { l: 'Vacuna', i: '💉' }, otro: { l: 'Otro', i: '📌' } };
+const REMS = [[10080, '1 semana'], [2880, '2 días'], [1440, '1 día'], [180, '3 h'], [120, '2 h'], [60, '1 h'], [30, '30 min']];
+const DEFAULT_AI = 'https://sh-claude-proxy.msothersm.workers.dev';
+const AI_MODEL = 'claude-sonnet-4-6';
+const myAppts = () => S.appts.filter(a => a.profileId === S.active);
+const apptById = id => S.appts.find(a => a.id === id);
+const apptTime = a => a.date ? atTime(parseYmd(a.date), a.time || '09:00') : null;
+const apptSortKey = a => (a.date || '9999-99-99') + (a.time || '99:99');
+const apptOverdue = a => a.status === 'pendiente' && a.date && apptTime(a).getTime() + 2 * 3600000 < Date.now();
+function relDay(ds) {
+  if (!ds) return ''; const d = dayDiff(new Date(), parseYmd(ds));
+  return d === 0 ? 'Hoy' : d === 1 ? 'Mañana' : d === -1 ? 'Ayer' : d > 1 && d < 7 ? `En ${d} días` : '';
+}
+let citasTab = 'prox';
+
+// archivos adjuntos (fotos/PDF) en IndexedDB
+const files = {
+  _db: null,
+  open() {
+    if (this._db) return Promise.resolve(this._db);
+    return new Promise((res, rej) => {
+      const r = indexedDB.open('pastillero_files', 1);
+      r.onupgradeneeded = () => r.result.createObjectStore('f');
+      r.onsuccess = () => { this._db = r.result; res(this._db); }; r.onerror = () => rej(r.error);
+    });
+  },
+  async tx(mode, fn) {
+    const db = await this.open();
+    return new Promise((res, rej) => { const t = db.transaction('f', mode); const rq = fn(t.objectStore('f')); t.oncomplete = () => res(rq && rq.result); t.onerror = () => rej(t.error); });
+  },
+  get(id) { return this.tx('readonly', s => s.get(id)); },
+  put(id, v) { return this.tx('readwrite', s => s.put(v, id)); },
+  del(id) { return this.tx('readwrite', s => s.delete(id)); },
+  async all() { const keys = await this.tx('readonly', s => s.getAllKeys()) || []; const out = {}; for (const k of keys) out[k] = await this.get(k); return out; }
+};
+async function releaseFile(fid) { if (!S.appts.some(a => (a.attachments || []).some(x => x.id === fid))) try { await files.del(fid); } catch (e) { } }
+function readAsDataURL(file) { return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(r.error); r.readAsDataURL(file); }); }
+async function prepFile(file) {
+  if (file.type === 'application/pdf') {
+    if (file.size > 8e6) throw new Error('El PDF es muy grande (máx. 8 MB)');
+    return { mime: 'application/pdf', data: await readAsDataURL(file), name: file.name || 'documento.pdf' };
+  }
+  const url = await readAsDataURL(file);
+  const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('No se pudo abrir la imagen')); i.src = url; });
+  const k = Math.min(1, 1600 / Math.max(img.naturalWidth, img.naturalHeight));
+  const c = document.createElement('canvas'); c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
+  const ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height); ctx.drawImage(img, 0, 0, c.width, c.height);
+  return { mime: 'image/jpeg', data: c.toDataURL('image/jpeg', 0.82), name: (file.name || 'foto').replace(/\.\w+$/, '') + '.jpg' };
+}
+const dataUrlToBlob = d => { const [h, b] = d.split(','); const mime = h.match(/:(.*?);/)[1]; const bin = atob(b); const u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return new Blob([u], { type: mime }); };
+
+// lectura con IA (mismo Worker que la app de gestión de SH)
+const AI_PROMPT = `Eres un asistente que lee documentos médicos chilenos: órdenes médicas (impresas o manuscritas), recetas, comprobantes de reserva de hora, capturas de pantalla de agendas de clínicas, correos o mensajes de confirmación.
+Hoy es {HOY}. En Chile las fechas se escriben día/mes/año.
+Extrae TODAS las citas, horas agendadas, exámenes u órdenes pendientes. Responde SOLO con JSON válido, sin texto adicional, con este formato:
+{"citas":[{"tipo":"consulta|examen|procedimiento|control|vacuna|otro","titulo":"motivo corto, ej: Consulta cardiología, Perfil lipídico, Ecotomografía abdominal","fecha":"AAAA-MM-DD o null","hora":"HH:MM en 24 h o null","profesional":"médico o profesional que ATIENDE (con especialidad si aparece) o null","lugar":"centro médico, clínica, laboratorio, con dirección y sala si aparecen, o null","telefono":"o null","examenes":["cada examen o procedimiento indicado"],"preparacion":"ayuno, suspender medicamentos, llegar antes, llevar orden, etc., o null","notas":"otros datos útiles: médico que emite la orden, fecha de emisión, diagnóstico o motivo, n° de reserva, previsión, valor; o null"}],"paciente":"nombre del paciente o null","confianza":"alta|media|baja"}
+Reglas:
+- Una orden de exámenes o interconsulta SIN fecha de atención: crea UNA cita con fecha null (queda "por agendar") y lista los exámenes en "examenes". La fecha de emisión de la orden NO es la fecha de la cita: ponla en notas.
+- Si un comprobante tiene varias horas, crea una cita por cada hora.
+- Si falta el año, usa la próxima ocurrencia a partir de hoy.
+- No inventes datos: lo que no se lea con seguridad va como null.
+- Corrige la ortografía evidente de exámenes y especialidades.`;
+async function aiRead(f) {
+  const url = (S.settings.aiUrl || DEFAULT_AI).trim();
+  const b64 = f.data.split(',')[1];
+  const item = f.mime === 'application/pdf'
+    ? { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: b64 } }
+    : { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: b64 } };
+  const prompt = AI_PROMPT.replace('{HOY}', `${ymd(new Date())} (${fmtDayLong(new Date())})`);
+  let r;
+  try {
+    r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: AI_MODEL, max_tokens: 2000, messages: [{ role: 'user', content: [item, { type: 'text', text: prompt }] }] }) });
+  } catch (e) { throw new Error('Sin conexión con el servicio de lectura'); }
+  let data; try { data = await r.json(); } catch (e) { throw new Error('Respuesta no válida del servicio (' + r.status + ')'); }
+  if (!r.ok || data.error) throw new Error((data.error && (data.error.message || data.error)) || ('Error ' + r.status));
+  const txt = (data.content || []).map(c => c.text || '').join('');
+  const m = txt.match(/\{[\s\S]*\}/); if (!m) throw new Error('No se encontró información en la imagen');
+  return JSON.parse(m[0]);
+}
+function normAI(c) {
+  const okDate = s => /^\d{4}-\d{2}-\d{2}$/.test(s || '') ? s : '';
+  const okTime = s => { const m = /^(\d{1,2}):(\d{2})/.exec(s || ''); return m ? pad(+m[1]) + ':' + m[2] : ''; };
+  const t = ATYPES[c.tipo] ? c.tipo : 'otro';
+  return { type: t, title: (c.titulo || ATYPES[t].l || '').trim(), date: okDate(c.fecha), time: okTime(c.hora),
+    professional: c.profesional || '', place: c.lugar || '', phone: c.telefono || '',
+    items: Array.isArray(c.examenes) ? c.examenes.filter(Boolean).join('\n') : (c.examenes || ''),
+    prep: c.preparacion || '', notes: c.notas || '' };
+}
+
+// ----- vista CITAS -----
+function apptCard(a, compact) {
+  const t = ATYPES[a.type] || ATYPES.otro, d = a.date ? parseYmd(a.date) : null;
+  const rel = relDay(a.date);
+  let tag = '';
+  if (a.status === 'realizada') tag = '<span class="tag ok">✓ Realizada</span>';
+  else if (a.status === 'cancelada') tag = '<span class="tag skip">Cancelada</span>';
+  else if (a.status === 'poragendar') tag = '<span class="tag now">Por agendar</span>';
+  else if (apptOverdue(a)) tag = '<span class="tag late">¿Se realizó?</span>';
+  else if (rel) tag = `<span class="tag ${rel === 'Hoy' || rel === 'Mañana' ? 'now' : 'pend'}">${rel}</span>`;
+  const nAtt = (a.attachments || []).length;
+  return `<div class="appt" data-appt="${a.id}">
+    <div class="cal ${d ? '' : 'nd'}">${d ? `<div class="m">${esc(d.toLocaleDateString('es-CL', { month: 'short' }).replace('.', ''))}</div><div class="d">${d.getDate()}</div><div class="w">${DOW[d.getDay()]}</div>` : '<div class="d" style="font-size:22px">?</div><div class="w">sin fecha</div>'}</div>
+    <div class="grow"><div class="small muted">${t.i} ${t.l}${a.date ? (a.time ? ' · ' + esc(a.time) : ' · sin hora') : ''}</div>
+      <div class="nm">${esc(a.title)}</div>
+      ${a.professional ? `<div class="sub">${esc(a.professional)}</div>` : ''}
+      ${!compact && a.place ? `<div class="sub">📍 ${esc(a.place)}</div>` : ''}
+      ${compact && a.prep && a.status === 'pendiente' ? `<div class="sub" style="color:var(--warn)">⚠ ${esc(a.prep)}</div>` : ''}
+      ${tag || nAtt ? `<div style="margin-top:6px">${tag}${nAtt ? ` <span class="small muted">📎 ${nAtt}</span>` : ''}</div>` : ''}
+    </div></div>`;
+}
+function renderCitas() {
+  const all = myAppts();
+  const prox = all.filter(a => a.status === 'pendiente').sort((a, b) => apptSortKey(a).localeCompare(apptSortKey(b)));
+  const porAg = all.filter(a => a.status === 'poragendar').sort((a, b) => (b.created || '').localeCompare(a.created || ''));
+  const hist = all.filter(a => a.status === 'realizada' || a.status === 'cancelada').sort((a, b) => apptSortKey(b).localeCompare(apptSortKey(a)));
+  const lists = { prox, porag: porAg, hist };
+  let h = `<h2>Citas y exámenes de ${esc(profile().name)}</h2>
+    <div class="grid2"><button class="btn pri" id="cScan">📷 Leer orden o captura</button><button class="btn ghost" id="cManual">✍️ Ingresar a mano</button></div>
+    <div class="seg3" style="margin-top:16px">
+      <button data-ct="prox" class="${citasTab === 'prox' ? 'on' : ''}">Próximas (${prox.length})</button>
+      <button data-ct="porag" class="${citasTab === 'porag' ? 'on' : ''}">Por agendar (${porAg.length})</button>
+      <button data-ct="hist" class="${citasTab === 'hist' ? 'on' : ''}">Historial</button></div>`;
+  const list = lists[citasTab];
+  if (!list.length) {
+    const msg = { prox: 'No tienes citas próximas.', porag: 'No hay órdenes pendientes de agendar. Cuando te den una orden médica sin fecha, fotografíala y quedará aquí hasta que pidas la hora.', hist: 'Aún no hay citas realizadas.' }[citasTab];
+    h += `<div class="card pad muted" style="margin-top:12px">${msg}</div>`;
+  } else if (citasTab === 'porag') {
+    h += `<div class="card" style="margin-top:12px">${list.map(a => apptCard(a)).join('')}</div>`;
+  } else {
+    let cur = '';
+    for (const a of list) {
+      const mk = a.date.slice(0, 7);
+      if (mk !== cur) {
+        if (cur) h += '</div>';
+        cur = mk; h += `<div class="hday"><div class="h"><span>${esc(parseYmd(a.date).toLocaleDateString('es-CL', { month: 'long', year: 'numeric' }))}</span></div><div class="card">`;
+      }
+      h += apptCard(a);
+    }
+    h += '</div></div>';
+  }
+  $('#view').innerHTML = h;
+  $('#cScan').onclick = scanSheet;
+  $('#cManual').onclick = () => apptForm();
+  document.querySelectorAll('[data-ct]').forEach(b => b.onclick = () => { citasTab = b.dataset.ct; renderCitas(); });
+  document.querySelectorAll('[data-appt]').forEach(r => r.onclick = () => apptSheet(r.dataset.appt));
+}
+
+// ----- lectura de foto -----
+function scanSheet() {
+  openSheet('Leer orden o captura', `
+    <p style="margin-top:0">Toma una foto de la <b>orden médica</b>, del <b>comprobante de reserva</b> o sube una <b>captura de pantalla</b> (correo, WhatsApp, app de la clínica). La app lee los datos y te los muestra para que los revises antes de guardar.</p>
+    <button class="btn pri block" id="sPick" style="min-height:56px">📷 Tomar foto o elegir imagen / PDF</button>
+    <input type="file" id="sFile" accept="image/*,application/pdf" hidden>
+    <div class="small muted" style="margin-top:12px">Consejo: buena luz, la hoja completa y sin sombras. La imagen se envía al servicio de lectura con IA solo para extraer los datos.</div>
+    <button class="btn ghost block" id="sManual" style="margin-top:16px">Prefiero ingresarla a mano</button>`, s => {
+    s.querySelector('#sPick').onclick = () => s.querySelector('#sFile').click();
+    s.querySelector('#sManual').onclick = () => apptForm();
+    s.querySelector('#sFile').onchange = async e => {
+      const file = e.target.files[0]; if (!file) return;
+      let f;
+      try { f = await prepFile(file); } catch (err) { return toast(err.message); }
+      openSheet('Leyendo…', `${f.mime.startsWith('image') ? `<img src="${f.data}" style="width:100%;max-height:240px;object-fit:contain;border-radius:12px;background:var(--bg)">` : '<div style="font-size:48px;text-align:center">📄</div>'}
+        <div class="spin"></div><p style="text-align:center" class="muted">Leyendo el documento con IA…<br>puede tardar unos segundos.</p>`);
+      try {
+        const res = await aiRead(f);
+        const citas = (res.citas || []).map(normAI);
+        reviewSheet(f, citas, res);
+      } catch (err) {
+        openSheet('No se pudo leer', `<p style="margin-top:0">${esc(err.message)}.</p><p>Puedes ingresar la cita a mano; la foto quedará adjunta igual.</p>
+          <button class="btn pri block" id="eMan">Ingresar a mano</button><button class="btn ghost block" id="eRetry" style="margin-top:10px">Probar con otra foto</button>`, s2 => {
+          s2.querySelector('#eMan').onclick = () => apptForm(null, {}, f);
+          s2.querySelector('#eRetry').onclick = scanSheet;
+        });
+      }
+    };
+  });
+}
+function apptFieldsHtml(c, p) {
+  // p = prefijo de ids
+  return `
+    <div class="field"><label class="l">Tipo</label><select class="in" id="${p}type">${Object.entries(ATYPES).map(([k, v]) => `<option value="${k}" ${k === c.type ? 'selected' : ''}>${v.i} ${v.l}</option>`).join('')}</select></div>
+    <div class="field"><label class="l">Motivo / nombre *</label><input class="in" id="${p}title" value="${esc(c.title || '')}" placeholder="Ej: Consulta cardiología"></div>
+    <div class="grid2">
+      <div class="field"><label class="l">Fecha</label><input class="in" type="date" id="${p}date" value="${esc(c.date || '')}"></div>
+      <div class="field"><label class="l">Hora</label><input class="in" type="time" id="${p}time" value="${esc(c.time || '')}"></div></div>
+    <div class="hint" style="margin:-10px 0 14px">Sin fecha queda en “Por agendar”.</div>
+    <div class="field"><label class="l">Profesional / especialidad</label><input class="in" id="${p}prof" value="${esc(c.professional || '')}" placeholder="Ej: Dr. Pérez, cardiólogo"></div>
+    <div class="field"><label class="l">Lugar</label><input class="in" id="${p}place" value="${esc(c.place || '')}" placeholder="Clínica, laboratorio, dirección"></div>
+    <div class="field"><label class="l">Teléfono para agendar o confirmar</label><input class="in" type="tel" id="${p}phone" value="${esc(c.phone || '')}"></div>
+    <div class="field"><label class="l">Exámenes / procedimientos</label><textarea class="in" id="${p}items" placeholder="Uno por línea">${esc(c.items || '')}</textarea></div>
+    <div class="field"><label class="l">Preparación</label><textarea class="in" id="${p}prep" style="min-height:60px" placeholder="Ej: ayuno de 8 horas, llevar orden">${esc(c.prep || '')}</textarea></div>
+    <div class="field"><label class="l">Notas</label><textarea class="in" id="${p}notes" style="min-height:60px">${esc(c.notes || '')}</textarea></div>`;
+}
+function readApptFields(s, p) {
+  const g = id => s.querySelector('#' + p + id);
+  return { type: g('type').value, title: g('title').value.trim(), date: g('date').value, time: g('time').value,
+    professional: g('prof').value.trim(), place: g('place').value.trim(), phone: g('phone').value.trim(),
+    items: g('items').value.trim(), prep: g('prep').value.trim(), notes: g('notes').value.trim() };
+}
+function newAppt(data, att) {
+  return { id: uid(), profileId: S.active, created: new Date().toISOString(), reminders: [1440, 120],
+    attachments: att ? [att] : [], result: '', ...data, status: data.date ? 'pendiente' : 'poragendar' };
+}
+function reviewSheet(f, citas, res) {
+  if (!citas.length) citas = [{ type: 'otro', title: '', date: '', time: '', professional: '', place: '', phone: '', items: '', prep: '', notes: '' }];
+  const conf = res.confianza;
+  let body = `${f.mime.startsWith('image') ? `<img src="${f.data}" style="width:100%;max-height:200px;object-fit:contain;border-radius:12px;background:var(--bg);margin-bottom:12px">` : ''}
+    <div class="alert ${conf === 'baja' ? 'warn' : 'info'}" style="margin:0 0 14px"><div>Revisa los datos antes de guardar${conf === 'baja' ? ': <b>la lectura fue difícil</b>, compara con la foto' : ''}.${res.paciente ? `<br>Paciente: <b>${esc(res.paciente)}</b>` : ''}</div></div>`;
+  citas.forEach((c, i) => {
+    body += `<div class="rev"><label class="switch" style="margin-bottom:8px"><b>${citas.length > 1 ? `Cita ${i + 1} de ${citas.length}` : 'Datos leídos'}</b><input type="checkbox" id="inc${i}" checked></label>${apptFieldsHtml(c, 'r' + i)}</div>`;
+  });
+  body += `<button class="btn pri block" id="rSave">Guardar</button>`;
+  openSheet('Revisar datos', body, s => {
+    s.querySelector('#rSave').onclick = async () => {
+      const chosen = [];
+      for (let i = 0; i < citas.length; i++) {
+        if (!s.querySelector('#inc' + i).checked) continue;
+        const d = readApptFields(s, 'r' + i);
+        if (!d.title) return toast(`Falta el motivo${citas.length > 1 ? ' en la cita ' + (i + 1) : ''}`);
+        chosen.push(d);
+      }
+      if (!chosen.length) return toast('No marcaste ninguna cita');
+      const fid = uid();
+      try { await files.put(fid, f.data); } catch (e) { toast('No se pudo guardar la foto adjunta'); }
+      for (const d of chosen) S.appts.push(newAppt(d, { id: fid, name: f.name, mime: f.mime }));
+      save(); closeSheet();
+      const sinFecha = chosen.filter(d => !d.date).length;
+      citasTab = sinFecha === chosen.length ? 'porag' : 'prox';
+      toast(chosen.length > 1 ? `${chosen.length} citas guardadas` : sinFecha ? 'Guardada en “Por agendar”' : 'Cita guardada ✓');
+      setView('citas');
+    };
+  });
+}
+
+// ----- formulario manual / edición -----
+function apptForm(id, preset, pendingFile) {
+  const ed = id ? apptById(id) : null;
+  const c = ed ? { ...ed } : { type: 'consulta', reminders: [1440, 120], ...(preset || {}) };
+  const rems = new Set(c.reminders || [1440, 120]);
+  openSheet(ed ? 'Editar cita' : 'Nueva cita', apptFieldsHtml(c, 'a') + `
+    <div class="field"><label class="l">Recordarme antes</label><div class="quick" id="aRems">${REMS.map(([m, l]) => `<button type="button" class="btn sm ${rems.has(m) ? '' : 'ghost'}" data-rm="${m}">${l}</button>`).join('')}</div></div>
+    ${pendingFile ? '<div class="small muted" style="margin-bottom:12px">📎 La foto quedará adjunta.</div>' : ''}
+    <button class="btn pri block" id="aSave">${ed ? 'Guardar cambios' : 'Guardar'}</button>
+    ${ed ? '<button class="btn bad block" id="aDel" style="margin-top:12px">Eliminar</button>' : ''}`, s => {
+    s.querySelectorAll('[data-rm]').forEach(b => b.onclick = () => { const m = +b.dataset.rm; rems.has(m) ? rems.delete(m) : rems.add(m); b.classList.toggle('ghost', !rems.has(m)); });
+    s.querySelector('#aSave').onclick = async () => {
+      const d = readApptFields(s, 'a'); if (!d.title) return toast('Falta el motivo');
+      d.reminders = [...rems].sort((a, b) => b - a);
+      if (ed) {
+        const dateChanged = ed.date !== d.date || ed.time !== d.time;
+        Object.assign(ed, d);
+        if (ed.status === 'poragendar' && d.date) ed.status = 'pendiente';
+        if (ed.status === 'pendiente' && !d.date) ed.status = 'poragendar';
+        if (dateChanged) for (const k of Object.keys(S.notified)) if (k.startsWith('appt|' + ed.id)) delete S.notified[k];
+      } else {
+        let att = null;
+        if (pendingFile) { const fid = uid(); try { await files.put(fid, pendingFile.data); att = { id: fid, name: pendingFile.name, mime: pendingFile.mime }; } catch (e) { } }
+        S.appts.push(newAppt(d, att));
+      }
+      save(); closeSheet(); toast('Guardado ✓');
+      citasTab = d.date ? 'prox' : 'porag';
+      if (view === 'citas') renderCitas(); else setView('citas');
+    };
+    s.querySelector('#aDel') && (s.querySelector('#aDel').onclick = async () => {
+      if (!await confirmBox('Eliminar', `¿Eliminar <b>${esc(ed.title)}</b> y sus documentos adjuntos?`, 'Eliminar', true)) return apptForm(id);
+      const atts = ed.attachments || [];
+      S.appts = S.appts.filter(a => a.id !== ed.id); save();
+      for (const x of atts) await releaseFile(x.id);
+      toast('Eliminada'); render();
+    });
+  });
+}
+
+// ----- detalle -----
+function apptSheet(id) {
+  const a = apptById(id); if (!a) return;
+  const t = ATYPES[a.type] || ATYPES.otro;
+  const kv = (k, v) => v ? `<div class="kv"><span class="k">${k}</span><div class="grow">${v}</div></div>` : '';
+  const when = a.date ? `<b>${esc(fmtDayLong(parseYmd(a.date)))}</b>${a.time ? ' a las <b>' + esc(a.time) + '</b>' : ' · sin hora'}${relDay(a.date) ? ` <span class="tag pend">${relDay(a.date)}</span>` : ''}`
+    : '<b style="color:var(--warn)">Por agendar</b> — pide la hora y luego ingrésala con “Poner fecha”.';
+  const items = (a.items || '').split('\n').filter(Boolean);
+  let body = `<div class="small muted">${t.i} ${t.l}</div><div style="font-size:21px;font-weight:700;margin-bottom:10px;line-height:1.25">${esc(a.title)}</div>
+    ${kv('📅', when)}${kv('👤', esc(a.professional))}
+    ${kv('📍', a.place ? `${esc(a.place)}<br><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(a.place)}" target="_blank" rel="noopener" style="color:var(--pri);font-size:15px">Ver en el mapa</a>` : '')}
+    ${kv('📞', a.phone ? `<a href="tel:${esc(a.phone.replace(/[^\d+]/g, ''))}" style="color:var(--pri)">${esc(a.phone)}</a>` : '')}
+    ${kv('🧪', items.length ? (items.length > 1 ? '<ul style="margin:0;padding-left:18px">' + items.map(i => `<li>${esc(i)}</li>`).join('') + '</ul>' : esc(items[0])) : '')}
+    ${a.prep ? `<div class="alert warn" style="margin:10px 0"><div><b>Preparación:</b> ${esc(a.prep)}</div></div>` : ''}
+    ${kv('📝', a.notes ? esc(a.notes).replace(/\n/g, '<br>') : '')}
+    ${a.status === 'pendiente' && a.reminders && a.reminders.length ? kv('🔔', 'Aviso ' + REMS.filter(r => a.reminders.includes(r[0])).map(r => r[1]).join(', ') + ' antes') : ''}
+    ${a.result ? `<div class="alert ok" style="margin:10px 0;background:var(--ok-soft);color:var(--ok)"><div><b>Resultado / indicaciones:</b><br>${esc(a.result).replace(/\n/g, '<br>')}</div></div>` : ''}
+    <h2 style="margin-top:18px">Documentos</h2>
+    <div class="thumbs" id="thumbs">${(a.attachments || []).map(x => `<div class="thumb" data-f="${x.id}" data-mime="${esc(x.mime)}">${x.mime === 'application/pdf' ? '📄' : ''}</div>`).join('')}
+      <label class="thumb" style="font-size:15px;text-align:center;color:var(--pri);font-weight:600">＋<br>Adjuntar<input type="file" id="attIn" accept="image/*,application/pdf" hidden></label></div>
+    <div style="display:grid;gap:10px;margin-top:20px">`;
+  if (a.status === 'poragendar') body += `<button class="btn pri" id="xSched">📅 Poner fecha y hora</button>`;
+  if (a.status === 'pendiente') body += `<button class="btn pri" id="xDone">✓ Marcar como realizada</button>`;
+  if (a.status === 'realizada') body += `<button class="btn" id="xResult">${a.result ? 'Editar resultado' : 'Anotar resultado'}</button><button class="btn" id="xNext">Agendar próximo control</button>`;
+  body += `<button class="btn ghost" id="xEdit">Editar</button>`;
+  if (a.status === 'pendiente' || a.status === 'poragendar') body += `<button class="btn ghost" id="xCancel">Cancelar cita</button>`;
+  if (a.status === 'cancelada') body += `<button class="btn ghost" id="xReopen">Reactivar</button>`;
+  body += `</div>`;
+  openSheet('Cita', body, async s => {
+    const on = (sel, fn) => { const el = s.querySelector(sel); if (el) el.onclick = fn; };
+    on('#xSched', () => apptForm(id));
+    on('#xEdit', () => apptForm(id));
+    on('#xDone', () => resultSheet(id, true));
+    on('#xResult', () => resultSheet(id, false));
+    on('#xNext', () => apptForm(null, { type: 'control', title: 'Control ' + (a.professional || a.title), professional: a.professional, place: a.place, phone: a.phone }));
+    on('#xCancel', async () => { if (await confirmBox('Cancelar cita', `¿Marcar <b>${esc(a.title)}</b> como cancelada?`, 'Sí, cancelar', true)) { a.status = 'cancelada'; save(); toast('Cita cancelada'); render(); } else apptSheet(id); });
+    on('#xReopen', () => { a.status = a.date ? 'pendiente' : 'poragendar'; save(); apptSheet(id); render(); });
+    s.querySelector('#attIn').onchange = async e => {
+      const file = e.target.files[0]; if (!file) return;
+      try { const f = await prepFile(file); const fid = uid(); await files.put(fid, f.data); (a.attachments ||= []).push({ id: fid, name: f.name, mime: f.mime }); save(); toast('Documento adjuntado'); apptSheet(id); }
+      catch (err) { toast(err.message || 'No se pudo adjuntar'); }
+    };
+    for (const el of s.querySelectorAll('.thumb[data-f]')) {
+      el.onclick = () => viewFile(id, el.dataset.f);
+      if (el.dataset.mime !== 'application/pdf') files.get(el.dataset.f).then(d => { if (d) el.style.backgroundImage = `url("${d}")`; else el.textContent = '⚠'; }).catch(() => { });
+    }
+  });
+}
+function resultSheet(id, markDone) {
+  const a = apptById(id);
+  openSheet(markDone ? 'Cita realizada' : 'Resultado', `
+    <div class="field"><label class="l">Resultado o indicaciones del médico (opcional)</label><textarea class="in" id="resT" style="min-height:120px" placeholder="Ej: exámenes normales, control en 3 meses, cambio de dosis…">${esc(a.result || '')}</textarea></div>
+    <div class="small muted" style="margin-bottom:14px">Puedes adjuntar fotos de los resultados desde el detalle de la cita.</div>
+    <button class="btn pri block" id="resOk">Guardar</button>`, s => {
+    s.querySelector('#resOk').onclick = () => {
+      a.result = s.querySelector('#resT').value.trim(); if (markDone) a.status = 'realizada';
+      save(); toast('Guardado ✓'); apptSheet(id); if (view !== 'meds') render();
+    };
+  });
+}
+async function viewFile(apptId, fid) {
+  const a = apptById(apptId), x = (a.attachments || []).find(y => y.id === fid); if (!x) return;
+  const d = await files.get(fid).catch(() => null);
+  if (!d) return toast('El archivo no está en este teléfono');
+  const isPdf = x.mime === 'application/pdf';
+  openSheet(x.name || 'Documento', `${isPdf ? '<div style="font-size:64px;text-align:center">📄</div>' : `<img src="${d}" style="width:100%;border-radius:12px">`}
+    <div style="display:grid;gap:10px;margin-top:14px">
+      ${isPdf ? '<button class="btn pri" id="vOpen">Abrir PDF</button>' : ''}
+      <button class="btn" id="vShare">Compartir / guardar</button>
+      <button class="btn bad" id="vDel">Quitar documento</button>
+      <button class="btn ghost" id="vBack">Volver</button></div>`, s => {
+    s.querySelector('#vBack').onclick = () => apptSheet(apptId);
+    s.querySelector('#vOpen') && (s.querySelector('#vOpen').onclick = () => { const u = URL.createObjectURL(dataUrlToBlob(d)); const el = document.createElement('a'); el.href = u; el.target = '_blank'; el.rel = 'noopener'; document.body.appendChild(el); el.click(); el.remove(); setTimeout(() => URL.revokeObjectURL(u), 60000); });
+    s.querySelector('#vShare').onclick = async () => {
+      const blob = dataUrlToBlob(d), file = new File([blob], x.name || 'documento', { type: x.mime });
+      try { if (navigator.canShare && navigator.canShare({ files: [file] })) return await navigator.share({ files: [file], title: a.title }); } catch (e) { if (e.name === 'AbortError') return; }
+      const u = URL.createObjectURL(blob), el = document.createElement('a'); el.href = u; el.download = x.name || 'documento'; document.body.appendChild(el); el.click(); el.remove(); setTimeout(() => URL.revokeObjectURL(u), 10000);
+    };
+    s.querySelector('#vDel').onclick = async () => {
+      if (!await confirmBox('Quitar documento', '¿Quitar este documento de la cita?', 'Quitar', true)) return viewFile(apptId, fid);
+      a.attachments = a.attachments.filter(y => y.id !== fid); save(); await releaseFile(fid); apptSheet(apptId);
+    };
+  });
+}
+function hoyCitasHtml() {
+  const now = Date.now(), lim = ymd(addDays(new Date(), 14));
+  const up = myAppts().filter(a => a.status === 'pendiente' && (apptOverdue(a) || (a.date <= lim && apptTime(a).getTime() + 2 * 3600000 >= now)))
+    .sort((a, b) => apptSortKey(a).localeCompare(apptSortKey(b))).slice(0, 4);
+  const nPor = myAppts().filter(a => a.status === 'poragendar').length;
+  if (!up.length && !nPor) return '';
+  let h = `<h2>Próximas citas</h2>`;
+  if (up.length) h += `<div class="card">${up.map(a => apptCard(a, true)).join('')}</div>`;
+  if (nPor) h += `<div class="alert warn" data-goporag style="cursor:pointer"><div class="grow"><b>${nPor} ${nPor === 1 ? 'orden' : 'órdenes'} por agendar.</b> Pide la hora y regístrala.</div><span>›</span></div>`;
+  return h;
+}
+function tickAppts(now, today) {
+  let changed = false; const multi = S.profiles.length > 1;
+  for (const a of S.appts) {
+    if (a.status !== 'pendiente' || !a.date) continue;
+    const at = apptTime(a).getTime(); if (now > at + 3600000) continue;
+    const due = (a.reminders || []).filter(m => now >= at - m * 60000 && !S.notified[`appt|${a.id}|${m}`]);
+    if (!due.length) continue;
+    due.forEach(m => S.notified[`appt|${a.id}|${m}`] = ymd(today)); changed = true;
+    const who = multi ? ` (${(S.profiles.find(p => p.id === a.profileId) || {}).name})` : '';
+    const t = ATYPES[a.type] || ATYPES.otro, rel = relDay(a.date);
+    notify(`${t.i} ${a.title}${who}`, `${rel ? rel + ' ' : fmtDayShort(parseYmd(a.date)) + ' '}${a.time ? 'a las ' + a.time : ''}${a.place ? ' · ' + a.place : ''}${a.prep ? ' · ' + a.prep : ''}`, 'appt-' + a.id);
+  }
+  return changed;
+}
+function icsAppts(L, stamp, fmt) {
+  const now = Date.now();
+  for (const a of myAppts()) {
+    if (a.status !== 'pendiente' || !a.date || apptTime(a).getTime() < now) continue;
+    const t = ATYPES[a.type] || ATYPES.otro;
+    const desc = [a.professional, (a.items || '').replace(/\n/g, ', '), a.prep ? 'Preparación: ' + a.prep : '', a.phone ? 'Tel: ' + a.phone : '', a.notes].filter(Boolean).join('\n');
+    L.push('BEGIN:VEVENT', `UID:${a.id}@pastillero`, `DTSTAMP:${stamp}`);
+    if (a.time) { const st = apptTime(a); L.push(`DTSTART:${fmt(st)}`, `DTEND:${fmt(new Date(st.getTime() + 3600000))}`); }
+    else L.push(`DTSTART;VALUE=DATE:${a.date.replace(/-/g, '')}`, `DTEND;VALUE=DATE:${ymd(addDays(parseYmd(a.date), 1)).replace(/-/g, '')}`);
+    L.push(`SUMMARY:${icsEsc(t.i + ' ' + a.title)}`, a.place ? `LOCATION:${icsEsc(a.place)}` : '', desc ? `DESCRIPTION:${icsEsc(desc)}` : '');
+    for (const m of (a.reminders || [])) {
+      const mins = a.time ? m : m - 540; // sin hora: relativo a las 9:00 del día
+      L.push('BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:${icsEsc(a.title)}`, `TRIGGER:${mins >= 0 ? '-' : ''}PT${Math.abs(mins)}M`, 'END:VALARM');
+    }
+    L.push('END:VEVENT');
+  }
 }
 
 // ---------- instalación ----------
@@ -1022,7 +1457,7 @@ function pillSvg() { return `<svg viewBox="0 0 64 64" aria-hidden="true"><g tran
 // ---------- arranque ----------
 load();
 $('#tabs').addEventListener('click', e => { const b = e.target.closest('button[data-v]'); if (b) setView(b.dataset.v); });
-$('#fab').onclick = () => medForm();
+$('#fab').onclick = () => view === 'citas' ? scanSheet() : medForm();
 $('#profileChip').onclick = profileSwitcher;
 window.addEventListener('scroll', () => $('#top').classList.toggle('scrolled', scrollY > 4), { passive: true });
 document.addEventListener('pointerdown', unlockAudio, { once: true });

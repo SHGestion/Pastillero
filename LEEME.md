@@ -29,6 +29,13 @@ Una app web no puede hacer sonar una alarma si el teléfono la cerró hace rato 
 - **Alarma garantizada:** "Agregar al calendario" crea eventos repetitivos con alarma en el calendario del teléfono, más un aviso de compra el día en que quedará stock para 5 días. Si cambias horarios o repones stock, borra el calendario "Pastillero" anterior y vuelve a exportar.
   - iPhone: si no se abre solo, el archivo queda en Archivos › Descargas; tócalo → "Agregar todo".
 
+## Citas y exámenes (nuevo)
+- Pestaña **Citas → 📷 Leer orden o captura**: foto de la orden médica (impresa o manuscrita), comprobante de reserva o captura de pantalla. La IA extrae tipo, motivo, fecha, hora, profesional, lugar, teléfono, exámenes y preparación; tú revisas y guardas. Si hay varias horas en un comprobante, crea una cita por cada una.
+- Órdenes sin fecha quedan en **Por agendar** hasta que pidas la hora.
+- Avisos antes de cada cita (1 semana, 2 días, 1 día, 3 h, 2 h, 1 h o 30 min), preparación destacada (ayuno, etc.), mapa y llamada con un toque.
+- Al marcarla realizada puedes anotar el resultado y adjuntar fotos de resultados. "Agendar próximo control" copia los datos.
+- La lectura usa el mismo Cloudflare Worker de la app de gestión de SH (Claude API, cuenta de Anthropic). Costo aproximado: pocos pesos por foto. Se puede cambiar en Ajustes › Lectura de órdenes médicas.
+
 ## Otros
 - **Varias personas en un teléfono** (ej. llevar los remedios de un familiar): toca el nombre arriba a la derecha.
 - **Historial**: cumplimiento de 7 días, tomas a la hora, dosis sin registrar, filtro por medicamento y exportación CSV (Excel).

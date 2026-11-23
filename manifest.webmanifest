@@ -1,7 +1,7 @@
 {
   "name": "Pastillero",
   "short_name": "Pastillero",
-  "description": "Recordatorio de medicamentos, registro de tomas y control de stock.",
+  "description": "Medicamentos, stock y agenda de citas y exámenes médicos.",
   "lang": "es-CL",
   "start_url": "./",
   "scope": "./",
